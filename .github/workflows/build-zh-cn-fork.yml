@@ -160,16 +160,18 @@ jobs:
           set -euo pipefail
           version='${{ inputs.version }}'
 
-          # MSI's version field needs numeric major.minor.patch.build, so a
-          # prerelease suffix is dropped for the base and folded into the build
-          # number. Mirrors upstream's generate_build_version().
+          # The template feeds `jan_build` straight into NSIS's VIProductVersion,
+          # which requires exactly four dot-separated numbers (X.X.X.X) and
+          # aborts with "invalid VIProductVersion format" otherwise. So this is
+          # not a bare build number: upstream builds it as base.build, giving
+          # 0.8.5 -> 0.8.5.0 and 0.8.5-cn1 -> 0.8.5.1.
           if [[ "$version" == *-* ]]; then
             base="${version%%-*}"
             suffix="${version#*-}"
             if [[ "$suffix" =~ ^rc([0-9]+)-beta$ ]]; then
               build="${BASH_REMATCH[1]}"
             else
-              # Any non-numeric suffix cannot be expressed as a build number.
+              # A non-numeric suffix has no build number; keep only its digits.
               build="$(printf '%s' "$suffix" | tr -cd '0-9')"
               [ -n "$build" ] || build="0"
             fi
@@ -177,14 +179,21 @@ jobs:
             base="$version"
             build="0"
           fi
-          echo "NSIS: base=$base build=$build"
+          version_with_build="${base}.${build}"
+          echo "NSIS: base=$base build=$build versionwithbuild=$version_with_build"
+
+          # VIProductVersion also caps each field at 65535.
+          if [ "${build:-0}" -gt 65535 ]; then
+            echo "error: build number $build exceeds the NSIS/ MSI field limit of 65535" >&2
+            exit 1
+          fi
 
           tpl=src-tauri/tauri.bundle.windows.nsis.template
           # NSIS source paths are backslash-separated and escaped in the script.
           ws='${{ github.workspace }}'
           sed -i "s|jan_workspace|${ws//\\/\\\\}|g" "$tpl"
           sed -i "s/jan_version/$base/g" "$tpl"
-          sed -i "s/jan_build/$build/g" "$tpl"
+          sed -i "s/jan_build/$version_with_build/g" "$tpl"
           sed -i "s/jan_productname/Jan-CN/g" "$tpl"
           sed -i "s/jan_mainbinaryname/Jan-Desktop/g" "$tpl"
           # A distinct bundle id keeps this installable side by side with an
@@ -210,6 +219,12 @@ jobs:
           fi
           grep -q '"{{additional_plugins_path}}"' "$tpl" \
             || { echo "error: ADDITIONALPLUGINSPATH was not switched to Tauri's placeholder" >&2; exit 1; }
+
+          # NSIS rejects a VIProductVersion that is not exactly four numbers, and
+          # that failure only surfaces ~45 minutes later at the bundling step, so
+          # assert it here where a mistake costs seconds.
+          grep -q "^!define VERSIONWITHBUILD \"$version_with_build\"$" "$tpl" \
+            || { echo "error: VERSIONWITHBUILD is not four-part X.X.X.X" >&2; grep '^!define VERSIONWITHBUILD' "$tpl" >&2; exit 1; }
           echo 'all NSIS placeholders resolved'
 
       # The engine build plus the Rust target dir is the largest consumer on the
