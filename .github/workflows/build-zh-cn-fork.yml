@@ -134,6 +134,30 @@ jobs:
           jq '.bundle.windows.nsis.template = "tauri.bundle.windows.nsis.template"' \
             src-tauri/tauri.windows.conf.json > /tmp/w.json && mv /tmp/w.json src-tauri/tauri.windows.conf.json
 
+          # MSI's version field is major.minor.patch.build with a NUMERIC build,
+          # so a prerelease it cannot express has to be bundled as NSIS alone.
+          # Our default version is `0.8.5-cn1`, whose suffix is non-numeric, so
+          # without this the job compiles the entire engine and app and then dies
+          # on the last target with:
+          #   optional pre-release identifier in app version must be numeric-only
+          #   and cannot be greater than 65535 for msi target
+          # dropping both installers. Upstream guards this case the same way.
+          prerelease=""
+          if [[ "$version" == *-* ]]; then
+            prerelease="${version#*-}"
+          fi
+          msi=1
+          case "$prerelease" in
+            *[!0-9]*) msi=0 ;;
+            ?*) [ "$prerelease" -le 65535 ] || msi=0 ;;
+          esac
+          if [ "$msi" = 0 ]; then
+            echo "$version has no MSI form (prerelease '$prerelease' is not numeric); bundling NSIS only"
+            jq '.bundle.targets = ["nsis"]' src-tauri/tauri.windows.conf.json > /tmp/w.json \
+              && mv /tmp/w.json src-tauri/tauri.windows.conf.json
+          fi
+          echo "bundle targets: $(jq -c '.bundle.targets' src-tauri/tauri.windows.conf.json)"
+
           for f in package.json web-app/package.json \
             src-tauri/plugins/tauri-plugin-hardware/package.json \
             src-tauri/plugins/tauri-plugin-llamacpp/package.json
@@ -313,8 +337,9 @@ jobs:
           if-no-files-found: error
 
       - name: Upload the MSI installer
-        # The MSI target is dropped automatically for prerelease versions, so a
-        # missing MSI is expected rather than a failure.
+        # The MSI target is dropped for any version whose prerelease suffix is
+        # not numeric (our 0.8.5-cn1 default qualifies), so a missing MSI is the
+        # normal outcome rather than a failure.
         continue-on-error: true
         uses: actions/upload-artifact@v5
         with:
