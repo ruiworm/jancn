@@ -9,5 +9,30 @@
   "clearHistory": "清除历史记录",
   "temporaryChat": "临时聊天",
   "temporaryChatDescription": "开始一个临时对话，不会保存到您的聊天历史记录中。",
-  "done": "Done"
+  "embeddings": {
+    "title": "正在准备您的文档",
+    "description": "正在索引附件，以便对其进行搜索和引用。文档较大时可能需要一些时间。"
+  },
+  "actions": {
+    "regenerate": "重新生成回复",
+    "askAgain": "再次提问",
+    "continue": "继续生成",
+    "remember": "记住此内容",
+    "rememberSaved": "已保存到记忆，名称为“{{name}}”",
+    "rememberExists": "记忆中已存在“{{name}}”",
+    "rememberFailed": "无法保存到记忆"
+  },
+  "done": "完成",
+  "webSources": "{{count}} 个来源",
+  "reasoning": {
+    "label": "推理中…",
+    "thinking": "思考中",
+    "working": "处理中…",
+    "showFullTimeline": "显示完整时间线",
+    "showCurrentStep": "仅显示当前步骤",
+    "thoughtForAWhile": "思考了几秒",
+    "thoughtFor": "思考了 {{duration}}",
+    "workedForAWhile": "工作了几秒",
+    "workedFor": "工作了 {{duration}}"
+  }
 }

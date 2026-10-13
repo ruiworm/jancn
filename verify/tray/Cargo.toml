@@ -1,0 +1,9 @@
+[package]
+name = "verify-tray"
+version = "0.1.0"
+edition = "2021"
+
+# No dependencies: the extracted logic is pure.
+[dependencies]
+
+[workspace]

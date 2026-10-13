@@ -1,0 +1,11 @@
+[package]
+name = "verify-mirror"
+version = "0.1.0"
+edition = "2021"
+
+# `url` is the only dependency of the extracted logic, so this crate builds
+# without touching the C toolchain that breaks on `ring`.
+[dependencies]
+url = "2"
+
+[workspace]

@@ -19,8 +19,41 @@ use url::Url;
 /// Jan mirror prefix for HuggingFace downloads
 /// - Stable builds: https://apps.jan.ai/
 /// - Nightly builds: https://apps-nightly.jan.ai/
-const JAN_MIRROR_PREFIX_STABLE: &str = "https://apps.jan.ai/";
-const JAN_MIRROR_PREFIX_NIGHTLY: &str = "https://apps-nightly.jan.ai/";
+///
+/// Localized fork override: when `JAN_HF_MIRROR_PREFIX` is set at build time,
+/// it replaces the upstream Jan mirror for every HuggingFace download. This is
+/// intended for regions where huggingface.co and apps.jan.ai are unreachable,
+/// e.g. `JAN_HF_MIRROR_PREFIX=https://hf-mirror.com`.
+///
+/// The trailing slash is optional; `get_mirror_prefix` normalizes it.
+///
+/// If `JAN_HF_MIRROR_STRIP_HOST` is set (any value), the leading `huggingface.co`
+/// host segment is removed from the rewritten path. Reverse proxies differ here:
+/// upstream `apps.jan.ai` expects `/{host}/{path}` and rejects a bare path, while
+/// `hf-mirror.com` serves `/{path}` directly and returns 404 for `/{host}/{path}`.
+/// Build with `JAN_HF_MIRROR_STRIP_HOST=1` for hf-mirror.com.
+///
+/// An empty `JAN_HF_MIRROR_PREFIX` is treated as unset: otherwise the rewrite
+/// would emit a scheme-less URL like `/some/repo/resolve/main/model.gguf`.
+const JAN_MIRROR_PREFIX_STABLE: &str = match option_env!("JAN_HF_MIRROR_PREFIX") {
+    Some(prefix) if !prefix.is_empty() => prefix,
+    _ => "https://apps.jan.ai/",
+};
+const JAN_MIRROR_PREFIX_NIGHTLY: &str = match option_env!("JAN_HF_MIRROR_PREFIX") {
+    Some(prefix) if !prefix.is_empty() => prefix,
+    _ => "https://apps-nightly.jan.ai/",
+};
+
+/// Whether the configured mirror expects the host segment to be stripped.
+///
+/// Treats an empty value as "not set". `option_env!(..).is_some()` alone would
+/// report `true` for `JAN_HF_MIRROR_STRIP_HOST=""`, and a build system that
+/// exports every variable it was handed (GitHub Actions does) would then enable
+/// host stripping for an upstream-style mirror, silently 404ing every download.
+const JAN_MIRROR_STRIPS_HOST: bool = match option_env!("JAN_HF_MIRROR_STRIP_HOST") {
+    Some(value) => !value.is_empty(),
+    None => false,
+};
 
 /// Domains that should use mirror download with fallback
 const MIRROR_DOMAINS: &[&str] = &["huggingface.co"];
@@ -31,13 +64,20 @@ fn is_nightly_build() -> bool {
     pkg_name.to_lowercase().contains("nightly")
 }
 
-/// Get the appropriate mirror prefix based on build type
-fn get_mirror_prefix() -> &'static str {
-    if is_nightly_build() {
+/// Get the appropriate mirror prefix based on build type.
+///
+/// Normalizes the configured prefix to end with exactly one `/`, so that
+/// `JAN_HF_MIRROR_PREFIX=https://hf-mirror.com` and `.../hf-mirror.com/` behave
+/// identically instead of silently producing `hf-mirror.comsome/repo/...`.
+fn get_mirror_prefix() -> String {
+    let raw = if is_nightly_build() {
         JAN_MIRROR_PREFIX_NIGHTLY
     } else {
         JAN_MIRROR_PREFIX_STABLE
-    }
+    };
+
+    let trimmed = raw.trim_end_matches('/');
+    format!("{trimmed}/")
 }
 
 /// Secret key for HMAC request authentication
@@ -57,6 +97,10 @@ pub fn err_to_string<E: std::fmt::Display>(e: E) -> String {
 /// Converts a URL to Jan mirror URL if applicable
 /// e.g., https://huggingface.co/... -> https://apps.jan.ai/huggingface.co/...
 /// or for nightly: https://huggingface.co/... -> https://apps-nightly.jan.ai/huggingface.co/...
+///
+/// When the build sets `JAN_HF_MIRROR_STRIP_HOST` (making `JAN_MIRROR_STRIPS_HOST`
+/// true), the host segment is dropped, producing https://hf-mirror.com/... which
+/// is what hf-mirror.com serves.
 pub fn convert_to_mirror_url(url: &str) -> Option<String> {
     let parsed = Url::parse(url).ok()?;
     let host = parsed.host_str()?;
@@ -70,7 +114,20 @@ pub fn convert_to_mirror_url(url: &str) -> Option<String> {
         let url_without_scheme = url
             .strip_prefix("https://")
             .or_else(|| url.strip_prefix("http://"))?;
-        Some(format!("{}{}", get_mirror_prefix(), url_without_scheme))
+
+        // Mirrors such as hf-mirror.com serve the HuggingFace path directly and
+        // return 404 when the `huggingface.co` host segment is still present.
+        // Only `MIRROR_DOMAINS` matches reach here, so stripping is unambiguous.
+        let path = if JAN_MIRROR_STRIPS_HOST {
+            url_without_scheme
+                .strip_prefix(host)
+                .map(|rest| rest.trim_start_matches('/'))
+                .unwrap_or(url_without_scheme)
+        } else {
+            url_without_scheme
+        };
+
+        Some(format!("{}{}", get_mirror_prefix(), path))
     } else {
         None
     }
@@ -741,7 +798,12 @@ async fn download_single_file(
 // ===== HTTP CLIENT HELPER FUNCTIONS =====
 
 /// Attempts to download from mirror URL first, falls back to original URL if mirror fails
-/// When using mirror URL, adds HMAC headers for request authentication
+///
+/// The Jan-operated mirror (`apps.jan.ai`) authenticates requests with HMAC
+/// headers. A third-party mirror configured through `JAN_HF_MIRROR_PREFIX`
+/// (e.g. hf-mirror.com) is a plain reverse proxy: it neither needs nor
+/// understands those headers, so they are omitted to avoid leaking Jan's
+/// signature scheme to an unrelated host.
 pub async fn _get_maybe_resume_with_fallback(
     client: &reqwest::Client,
     url: &str,
@@ -749,15 +811,24 @@ pub async fn _get_maybe_resume_with_fallback(
 ) -> Result<(reqwest::Response, String), String> {
     // Try mirror URL first if applicable
     if let Some(mirror_url) = convert_to_mirror_url(url) {
-        log::info!("Attempting download from Jan mirror: {}", mirror_url);
-        match _get_maybe_resume_with_hmac(client, &mirror_url, start_bytes).await {
+        log::info!("Attempting download from mirror: {}", mirror_url);
+
+        // Only the Jan-hosted mirror speaks the HMAC auth scheme; external
+        // mirrors are contacted as a normal, unsigned request.
+        let attempt = if JAN_MIRROR_STRIPS_HOST {
+            _get_maybe_resume_internal(client, &mirror_url, start_bytes).await
+        } else {
+            _get_maybe_resume_with_hmac(client, &mirror_url, start_bytes).await
+        };
+
+        match attempt {
             Ok(resp) => {
-                log::info!("Successfully connected to Jan mirror");
+                log::info!("Successfully connected to mirror");
                 return Ok((resp, mirror_url));
             }
             Err(e) => {
                 log::warn!(
-                    "Jan mirror download failed: {}. Falling back to original URL...",
+                    "Mirror download failed: {}. Falling back to original URL...",
                     e
                 );
             }

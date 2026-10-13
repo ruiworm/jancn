@@ -242,11 +242,113 @@ pub fn setup_mcp<R: Runtime>(app: &App<R>) {
 #[cfg(feature = "desktop")]
 pub const TRAY_ID: &str = "tray";
 
+/// Tray labels, applied when the tray menu is built.
+///
+/// The tray menu is native chrome drawn by the OS, so it cannot read the web
+/// app's locale files. The frontend pushes the active language down through the
+/// `set_tray_language` command; until it does, English is used.
+#[cfg(feature = "desktop")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TrayLanguage {
+    En,
+    ZhCn,
+    ZhTw,
+    Other,
+}
+
+#[cfg(feature = "desktop")]
+impl TrayLanguage {
+    /// Maps a BCP-47 tag as stored by the web app (e.g. `zh-CN`) onto a variant.
+    pub fn from_tag(tag: &str) -> Self {
+        let normalized = tag.trim().to_ascii_lowercase().replace('_', "-");
+        match normalized.as_str() {
+            "zh-cn" | "zh-hans" | "zh" => Self::ZhCn,
+            "zh-tw" | "zh-hk" | "zh-hant" => Self::ZhTw,
+            "en" | "en-us" | "en-gb" => Self::En,
+            _ => Self::Other,
+        }
+    }
+
+    /// `(open, quit)` labels for this language.
+    pub fn labels(self) -> (&'static str, &'static str) {
+        match self {
+            Self::ZhCn => ("打开 Jan", "退出"),
+            Self::ZhTw => ("開啟 Jan", "結束"),
+            // Unknown languages keep the upstream English labels rather than
+            // guessing at a translation.
+            Self::En | Self::Other => ("Open Jan", "Quit"),
+        }
+    }
+}
+
+#[cfg(feature = "desktop")]
+static TRAY_LANGUAGE: std::sync::OnceLock<std::sync::Mutex<TrayLanguage>> =
+    std::sync::OnceLock::new();
+
+#[cfg(feature = "desktop")]
+fn tray_language_cell() -> &'static std::sync::Mutex<TrayLanguage> {
+    TRAY_LANGUAGE.get_or_init(|| std::sync::Mutex::new(TrayLanguage::En))
+}
+
+/// Stores the active tray language; does not touch the live tray.
+#[cfg(feature = "desktop")]
+pub fn apply_tray_language(language: TrayLanguage) {
+    if let Ok(mut guard) = tray_language_cell().lock() {
+        *guard = language;
+    }
+}
+
+#[cfg(feature = "desktop")]
+pub fn current_tray_language() -> TrayLanguage {
+    tray_language_cell()
+        .lock()
+        .map(|guard| *guard)
+        .unwrap_or(TrayLanguage::En)
+}
+
+/// Rebuilds the tray menu so a language change takes effect without a restart.
+#[cfg(feature = "desktop")]
+pub fn refresh_tray<R: Runtime>(app: &AppHandle<R>) {
+    let Some(tray) = app.tray_by_id(TRAY_ID) else {
+        return;
+    };
+    let (open_label, quit_label) = current_tray_language().labels();
+    let handle = app.clone();
+    let _ = app.run_on_main_thread(move || {
+        let Ok(show_i) = MenuItem::with_id(&handle, "open", open_label, true, None::<&str>) else {
+            return;
+        };
+        let Ok(quit_i) = MenuItem::with_id(&handle, "quit", quit_label, true, None::<&str>) else {
+            return;
+        };
+        let Ok(separator_i) = PredefinedMenuItem::separator(&handle) else {
+            return;
+        };
+        let Ok(menu) = Menu::with_items(&handle, &[&show_i, &separator_i, &quit_i]) else {
+            return;
+        };
+        if let Err(e) = tray.set_menu(Some(menu)) {
+            log::warn!("Failed to apply localized tray menu: {e}");
+        }
+    });
+}
+
 /// Tray icon forced on for the whole app lifetime at compile time; otherwise it
 /// only exists while the Local API Server is running.
 #[cfg(feature = "desktop")]
 pub fn tray_always_visible() -> bool {
     option_env!("ENABLE_SYSTEM_TRAY_ICON").unwrap_or("false") == "true"
+}
+
+/// Tells the native tray menu which language the web app is showing, so the
+/// tray labels stop being hardcoded English. Called by the frontend whenever the
+/// active language changes (including on startup).
+#[cfg(feature = "desktop")]
+#[tauri::command]
+pub fn set_tray_language<R: Runtime>(app: AppHandle<R>, language: String) -> Result<(), String> {
+    apply_tray_language(TrayLanguage::from_tag(&language));
+    refresh_tray(&app);
+    Ok(())
 }
 
 #[cfg(feature = "desktop")]
@@ -278,8 +380,9 @@ pub fn remove_tray<R: Runtime>(app: &AppHandle<R>) {
 
 #[cfg(feature = "desktop")]
 pub fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>> {
-    let show_i = MenuItem::with_id(app, "open", "Open Jan", true, None::<&str>)?;
-    let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let (open_label, quit_label) = current_tray_language().labels();
+    let show_i = MenuItem::with_id(app, "open", open_label, true, None::<&str>)?;
+    let quit_i = MenuItem::with_id(app, "quit", quit_label, true, None::<&str>)?;
     let separator_i = PredefinedMenuItem::separator(app)?;
     let menu = Menu::with_items(app, &[&show_i, &separator_i, &quit_i])?;
     TrayIconBuilder::with_id(TRAY_ID)
@@ -613,4 +716,50 @@ fn setup_window_theme_listener<R: Runtime>(
             let _ = app_handle_clone.emit("theme-changed", theme_str);
         }
     });
+}
+
+#[cfg(all(test, feature = "desktop"))]
+mod tray_language_tests {
+    use super::TrayLanguage;
+
+    #[test]
+    fn maps_simplified_chinese_tags() {
+        // The web app stores the tag exactly as it appears in locales/, e.g. zh-CN.
+        assert_eq!(TrayLanguage::from_tag("zh-CN"), TrayLanguage::ZhCn);
+        assert_eq!(TrayLanguage::from_tag("zh-cn"), TrayLanguage::ZhCn);
+        assert_eq!(TrayLanguage::from_tag("zh"), TrayLanguage::ZhCn);
+        assert_eq!(TrayLanguage::from_tag("zh-Hans"), TrayLanguage::ZhCn);
+        // Locale tags occasionally arrive with an underscore separator.
+        assert_eq!(TrayLanguage::from_tag("zh_CN"), TrayLanguage::ZhCn);
+        assert_eq!(TrayLanguage::from_tag("  zh-CN  "), TrayLanguage::ZhCn);
+    }
+
+    #[test]
+    fn maps_traditional_chinese_tags() {
+        assert_eq!(TrayLanguage::from_tag("zh-TW"), TrayLanguage::ZhTw);
+        assert_eq!(TrayLanguage::from_tag("zh-HK"), TrayLanguage::ZhTw);
+        assert_eq!(TrayLanguage::from_tag("zh-Hant"), TrayLanguage::ZhTw);
+    }
+
+    #[test]
+    fn unknown_languages_keep_english_labels() {
+        // Never guess a translation for an unmapped locale; upstream English is
+        // the safe fallback and matches the pre-localization behaviour.
+        for tag in ["fr", "ja", "", "not-a-locale", "en-GB"] {
+            let lang = TrayLanguage::from_tag(tag);
+            if lang == TrayLanguage::En || lang == TrayLanguage::Other {
+                assert_eq!(lang.labels(), ("Open Jan", "Quit"), "tag: {tag:?}");
+            }
+        }
+        assert_eq!(TrayLanguage::from_tag("fr"), TrayLanguage::Other);
+    }
+
+    #[test]
+    fn chinese_labels_are_translated_and_keep_the_brand() {
+        let (open, quit) = TrayLanguage::ZhCn.labels();
+        assert_eq!(open, "打开 Jan");
+        assert_eq!(quit, "退出");
+        // "Jan" is a product name and must survive translation.
+        assert!(open.contains("Jan"));
+    }
 }

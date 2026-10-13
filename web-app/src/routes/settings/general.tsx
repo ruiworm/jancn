@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input'
 import { useHardware } from '@/hooks/useHardware'
 import LanguageSwitcher from '@/containers/LanguageSwitcher'
 import { isRootDir } from '@/utils/path'
+import { hfApiUrl } from '@/lib/hfEndpoint'
 const TOKEN_VALIDATION_TIMEOUT_MS = 10_000
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -455,7 +456,7 @@ function General() {
                         )
                         try {
                           const resp = await fetch(
-                            'https://huggingface.co/api/whoami-v2',
+                            hfApiUrl('/api/whoami-v2'),
                             {
                               headers: { Authorization: `Bearer ${token}` },
                               signal: controller.signal,

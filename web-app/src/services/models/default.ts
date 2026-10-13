@@ -3,6 +3,7 @@
  */
 
 import { sanitizeModelId } from '@/lib/utils'
+import { hfApiUrl } from '@/lib/hfEndpoint'
 import {
   AIEngine,
   EngineManager,
@@ -115,7 +116,9 @@ export class DefaultModelsService implements ModelsService {
       }
 
       const response = await fetch(
-        `https://huggingface.co/api/models/${cleanRepoId}?blobs=true&files_metadata=true`,
+        hfApiUrl(
+          `/api/models/${cleanRepoId}?blobs=true&files_metadata=true`
+        ),
         {
           headers: hfToken
             ? {

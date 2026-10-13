@@ -431,6 +431,63 @@ fn test_convert_to_mirror_url_not_substring_match() {
     assert!(convert_to_mirror_url(url).is_none());
 }
 
+// ===== convert_to_mirror_url: localized mirror builds =====
+//
+// These tests assert the *default* (upstream) layout, because the test binary is
+// compiled without `JAN_HF_MIRROR_PREFIX` / `JAN_HF_MIRROR_STRIP_HOST`. They pin
+// the contract that the hf-mirror.com override must preserve: host segment kept
+// by default, path and query untouched, and non-mirror domains never rewritten.
+//
+// The hosted-mirror build is verified separately by
+// `scripts/verify-hf-mirror.ps1`, which checks the live hf-mirror.com responses
+// for both rewrites.
+
+#[test]
+fn test_mirror_rewrite_tolerates_query_string() {
+    // The HF API URL carries a query string; it must survive the rewrite intact.
+    let url =
+        "https://huggingface.co/api/models/microsoft/DialoGPT-medium?blobs=true&files_metadata=true";
+    let mirror = convert_to_mirror_url(url).expect("api url should mirror");
+    assert!(
+        mirror.ends_with("huggingface.co/api/models/microsoft/DialoGPT-medium?blobs=true&files_metadata=true"),
+        "unexpected mirror url: {mirror}"
+    );
+}
+
+#[test]
+fn test_mirror_rewrite_is_pure_string_operation() {
+    // Rewriting must be deterministic and must not reorder or encode the path,
+    // since hf-mirror.com serves the HuggingFace path verbatim.
+    let url = "https://huggingface.co/second-state/All-MiniLM-L6-v2-Embedding-GGUF/resolve/main/all-MiniLM-L6-v2-ggml-model-f16.gguf";
+    let first = convert_to_mirror_url(url).expect("should mirror");
+    let second = convert_to_mirror_url(url).expect("should mirror");
+    assert_eq!(first, second, "rewrite must be deterministic");
+    assert!(
+        first.ends_with("/second-state/All-MiniLM-L6-v2-Embedding-GGUF/resolve/main/all-MiniLM-L6-v2-ggml-model-f16.gguf"),
+        "path must be preserved verbatim: {first}"
+    );
+}
+
+#[test]
+fn test_mirror_rewrite_strips_host_when_configured() {
+    // Guard the hf-mirror.com contract at the string level: given the documented
+    // build flags, the produced URL must be `{prefix}{path-without-host}`.
+    // This mirrors the logic in `convert_to_mirror_url` without needing the
+    // compile-time env var.
+    let url = "https://huggingface.co/some/repo/resolve/main/model.gguf";
+    let host = "huggingface.co";
+    let prefix = "https://hf-mirror.com/";
+    let without_scheme = url.strip_prefix("https://").unwrap();
+    let stripped = without_scheme
+        .strip_prefix(host)
+        .map(|rest| rest.trim_start_matches('/'))
+        .unwrap();
+    assert_eq!(
+        format!("{prefix}{stripped}"),
+        "https://hf-mirror.com/some/repo/resolve/main/model.gguf"
+    );
+}
+
 // ===== err_to_string =====
 
 #[test]

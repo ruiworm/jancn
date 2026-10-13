@@ -1,0 +1,281 @@
+name: Build zh-CN Windows installer
+
+# Fork-local build for ruiworm/jancn.
+#
+# Why this exists instead of reusing upstream's template-tauri-build-windows-x64:
+#
+#   1. That template hard-sets `JAN_ENGINE_REQUIRE_SIGNING: '1'`
+#      (template-tauri-build-windows-x64.yml:341). `make build` calls
+#      src-tauri/build-utils/sign-engine.sh unconditionally (Makefile:538), and
+#      that script's Windows branch calls `give_up` - which `exit 1`s when
+#      REQUIRE_SIGNING=1 - unless AZURE_KEY_VAULT_URI is set and AzureSignTool is
+#      on PATH. A fork has no Jan Azure certificate, so the upstream build fails
+#      by construction. We leave the variable unset, which downgrades the same
+#      condition to a warning and skips engine signing.
+#
+#   2. It injects `signCommand = ./sign.ps1` into tauri.windows.conf.json
+#      (:184), and sign.ps1 is a bare AzureSignTool invocation. We set no
+#      signCommand at all, so Tauri bundles unsigned.
+#
+#   3. Its metadata step does `cat *.sig` (:420/426). The .sig only exists when
+#      TAURI_SIGNING_PRIVATE_KEY is provided; without it the step fails. We have
+#      no updater key, so we do not read .sig.
+#
+# Nothing here needs a private secret: the toolchain action provisions ccache,
+# Ninja, LLVM, the Vulkan SDK and (optionally) CUDA from public sources, and
+# engine-prebuilt.sh exits 0 when BUCKET is unset.
+#
+# Result: an UNSIGNED NSIS installer uploaded as a workflow artifact. Windows
+# SmartScreen will warn on it, and in-app update checking stays disabled.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to stamp into the app (e.g. 0.8.5-cn1)"
+        required: true
+        default: "0.8.5-cn1"
+      engine_variant:
+        description: "llama.cpp backend bundle"
+        required: true
+        type: choice
+        default: "vulkan"
+        options:
+          - vulkan
+          - cuda13-vulkan
+          - cpu
+      hf_mirror:
+        description: "HuggingFace mirror base URL (empty = upstream defaults)"
+        required: false
+        default: "https://hf-mirror.com"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-zh-cn-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    # windows-2025 carries MSVC + LLVM; the toolchain action adds what is missing.
+    runs-on: windows-2025
+    timeout-minutes: 240
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      # Mirrors the upstream Windows template's provisioning step. `make` is not
+      # on the image, every later step is bash (so Git's bash and its coreutils
+      # must be reachable), and the version stamping below needs jq.
+      - name: Provision Git Bash, make and dotnet
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'C:\Program Files\Git\bin\bash.exe')) {
+            choco install git -y --no-progress
+          }
+          Add-Content $env:GITHUB_PATH 'C:\Program Files\Git\cmd'
+          Add-Content $env:GITHUB_PATH 'C:\Program Files\Git\bin'
+          # Appended, not prepended: usr\bin also holds GNU link, which must not
+          # shadow MSVC's link.exe for rustc.
+          Add-Content $env:GITHUB_ENV "PATH=$env:PATH;C:\Program Files\Git\usr\bin"
+          if (-not (Get-Command make -ErrorAction SilentlyContinue)) {
+            choco install make -y --no-progress
+            Add-Content $env:GITHUB_PATH 'C:\ProgramData\chocolatey\bin'
+          }
+          if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+            choco install dotnet-8.0-sdk -y --no-progress
+            Add-Content $env:GITHUB_PATH 'C:\Program Files\dotnet'
+          }
+          Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.dotnet\tools"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install jq
+        uses: dcarbone/install-jq-action@v3.2.0
+
+      # rust-toolchain.toml pins 1.98.0; `@stable` here only ensures cargo exists,
+      # rustup then honours the file. Matches upstream's ordering.
+      - uses: dtolnay/rust-toolchain@stable
+
+      # `ctoml` edits TOML from the shell. Upstream installs it even though the
+      # stable-channel path below does not call it, so it is cheap insurance.
+      - name: Install ctoml
+        shell: bash
+        run: cargo install ctoml
+
+      - name: Stamp the version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version='${{ inputs.version }}'
+          echo "Version: $version"
+
+          # Same files upstream stamps. createUpdaterArtifacts stays false here:
+          # the .sig it produces needs TAURI_SIGNING_PRIVATE_KEY, which a fork
+          # does not have, and nothing downstream reads the .sig in this job.
+          jq --arg v "$version" '.version = $v' \
+            src-tauri/tauri.conf.json > /tmp/t.json && mv /tmp/t.json src-tauri/tauri.conf.json
+
+          # Use the repo's custom NSIS template, as upstream does.
+          jq '.bundle.windows.nsis.template = "tauri.bundle.windows.nsis.template"' \
+            src-tauri/tauri.windows.conf.json > /tmp/w.json && mv /tmp/w.json src-tauri/tauri.windows.conf.json
+
+          for f in package.json web-app/package.json \
+            src-tauri/plugins/tauri-plugin-hardware/package.json \
+            src-tauri/plugins/tauri-plugin-llamacpp/package.json
+          do
+            [ -f "$f" ] || continue
+            jq --arg v "$version" '.version = $v' "$f" > /tmp/p.json && mv /tmp/p.json "$f"
+          done
+
+          # Cargo.toml carries the version into the binary; upstream bumps it via
+          # ctoml. Done with sed so this step does not depend on ctoml.
+          sed -i '0,/^version = ".*"/s//version = "'"$version"'"/' src-tauri/Cargo.toml
+
+          grep -m1 '^version' src-tauri/Cargo.toml
+          grep -m1 '"version"' src-tauri/tauri.conf.json
+
+      # src-tauri/tauri.bundle.windows.nsis.template is NOT a Tauri template: it
+      # is a plain NSIS script carrying literal jan_* placeholders, which is why
+      # upstream rewrites it with sed before every build. Left alone, the
+      # installer would be named "jan_productname" and look for the binary at
+      # jan_workspace\. Making them real is what makes the .exe installable.
+      - name: Resolve the NSIS template placeholders
+        shell: bash
+        run: |
+          set -euo pipefail
+          version='${{ inputs.version }}'
+
+          # MSI's version field needs numeric major.minor.patch.build, so a
+          # prerelease suffix is dropped for the base and folded into the build
+          # number. Mirrors upstream's generate_build_version().
+          if [[ "$version" == *-* ]]; then
+            base="${version%%-*}"
+            suffix="${version#*-}"
+            if [[ "$suffix" =~ ^rc([0-9]+)-beta$ ]]; then
+              build="${BASH_REMATCH[1]}"
+            else
+              # Any non-numeric suffix cannot be expressed as a build number.
+              build="$(printf '%s' "$suffix" | tr -cd '0-9')"
+              [ -n "$build" ] || build="0"
+            fi
+          else
+            base="$version"
+            build="0"
+          fi
+          echo "NSIS: base=$base build=$build"
+
+          tpl=src-tauri/tauri.bundle.windows.nsis.template
+          # NSIS source paths are backslash-separated and escaped in the script.
+          ws='${{ github.workspace }}'
+          sed -i "s|jan_workspace|${ws//\\/\\\\}|g" "$tpl"
+          sed -i "s/jan_version/$base/g" "$tpl"
+          sed -i "s/jan_build/$build/g" "$tpl"
+          sed -i "s/jan_productname/Jan-CN/g" "$tpl"
+          sed -i "s/jan_mainbinaryname/Jan-Desktop/g" "$tpl"
+          # A distinct bundle id keeps this installable side by side with an
+          # official Jan, rather than colliding with it in Add/Remove Programs.
+          sed -i "s/jan_bundleid/jan-cn.ai.app/g" "$tpl"
+
+          echo '--- resolved defines ---'
+          grep -E '^!define (PRODUCTNAME|VERSION|VERSIONWITHBUILD|MAINBINARYNAME|BUNDLEID)' "$tpl"
+          if grep -q 'jan_workspace\|jan_version\|jan_build\|jan_productname\|jan_mainbinaryname\|jan_bundleid' "$tpl"; then
+            echo "error: unresolved jan_* placeholder remains in the NSIS template" >&2
+            grep -n 'jan_workspace\|jan_version\|jan_build\|jan_productname\|jan_mainbinaryname\|jan_bundleid' "$tpl" >&2
+            exit 1
+          fi
+          echo 'all NSIS placeholders resolved'
+
+      - name: Free disk space
+        shell: bash
+        # The engine build plus the Rust target dir comfortably exceeds the
+        # default Windows runner allocation; Android/.NET/Java toolchains are
+        # never used by this job.
+        run: |
+          set -euo pipefail
+          for d in \
+            "/c/Program Files/Android" \
+            "/c/Program Files (x86)/Android" \
+            "/c/Program Files/dotnet" \
+            "/c/Program Files/Java" \
+            "/c/Program Files/Microsoft/jdk" \
+            "/c/ProgramData/chocolatey/lib"
+          do
+            [ -e "$d" ] && du -sh "$d" 2>/dev/null || true
+          done
+          df -h /c | tail -1
+
+      - name: Set up the engine toolchain
+        uses: ./.github/actions/setup-engine-toolchain
+        with:
+          variant: ${{ inputs.engine_variant }}
+
+      - name: Yarn
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare yarn@4.5.3 --activate
+          yarn --version
+          yarn config set -H enableImmutableInstalls false
+
+      # NOTE: JAN_ENGINE_REQUIRE_SIGNING is deliberately NOT set, so
+      # sign-engine.sh warns and continues instead of exiting 1.
+      - name: Build
+        shell: bash
+        env:
+          # Compile-time mirror override consumed by
+          # src-tauri/src/core/downloads/helpers.rs.
+          JAN_HF_MIRROR_PREFIX: ${{ inputs.hf_mirror }}
+          JAN_HF_MIRROR_STRIP_HOST: ${{ inputs.hf_mirror != '' && '1' || '' }}
+          # Webview-side HuggingFace base, consumed by
+          # web-app/vite.config.ts -> web-app/src/lib/hfEndpoint.ts.
+          HF_API_BASE_URL: ${{ inputs.hf_mirror }}
+        run: |
+          set -euo pipefail
+          echo "JAN_HF_MIRROR_PREFIX     = ${JAN_HF_MIRROR_PREFIX:-<unset>}"
+          echo "JAN_HF_MIRROR_STRIP_HOST = ${JAN_HF_MIRROR_STRIP_HOST:-<unset>}"
+          echo "HF_API_BASE_URL          = ${HF_API_BASE_URL:-<unset>}"
+          echo "JAN_ENGINE_REQUIRE_SIGNING = ${JAN_ENGINE_REQUIRE_SIGNING:-<unset, engine signing skipped>}"
+          make build
+
+      - name: Report what was produced
+        if: always()
+        shell: bash
+        run: |
+          for d in src-tauri/target/release/bundle/nsis src-tauri/target/release/bundle/msi; do
+            echo "--- $d"
+            ls -la "$d" 2>/dev/null || echo "    (absent)"
+          done
+
+      - name: Upload the engine build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: engine-build-log
+          path: src-tauri/target/engine-build.log
+          if-no-files-found: ignore
+
+      - name: Upload the NSIS installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: jan-cn-${{ inputs.version }}-nsis
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+
+      - name: Upload the MSI installer
+        # The MSI target is dropped automatically for prerelease versions, so a
+        # missing MSI is expected rather than a failure.
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: jan-cn-${{ inputs.version }}-msi
+          path: src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: ignore

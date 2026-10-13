@@ -115,10 +115,19 @@ export default defineConfig(({ mode }) => {
       POSTHOG_HOST: JSON.stringify(env.POSTHOG_HOST),
       GA_MEASUREMENT_ID: JSON.stringify(env.GA_MEASUREMENT_ID),
       MODEL_CATALOG_URL: JSON.stringify(
-        'https://raw.githubusercontent.com/janhq/model-catalog/main/model_catalog_v2.json'
+        env.MODEL_CATALOG_URL ||
+          'https://raw.githubusercontent.com/janhq/model-catalog/main/model_catalog_v2.json'
       ),
       LATEST_JAN_MODEL_URL: JSON.stringify(
-        'https://raw.githubusercontent.com/janhq/model-catalog/main/latest_jan_model.json'
+        env.LATEST_JAN_MODEL_URL ||
+          'https://raw.githubusercontent.com/janhq/model-catalog/main/latest_jan_model.json'
+      ),
+      // Base for direct HuggingFace API calls made from the webview (Hub search,
+      // token validation). These do NOT go through the Rust download mirror, so
+      // in regions where huggingface.co is unreachable this must be pointed at a
+      // mirror such as https://hf-mirror.com. No trailing slash.
+      HF_API_BASE_URL: JSON.stringify(
+        (env.HF_API_BASE_URL || 'https://huggingface.co').replace(/\/+$/, '')
       ),
       AUTO_UPDATER_DISABLED: JSON.stringify(
         env.AUTO_UPDATER_DISABLED === 'true'

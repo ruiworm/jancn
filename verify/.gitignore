@@ -1,0 +1,7 @@
+# Build output for the extracted-logic verification crates.
+#
+# These crates exist only to let a compiler exercise logic that the main
+# `src-tauri` build cannot test in every environment (see run.ps1). Their build
+# artifacts are not part of the deliverable.
+target/
+Cargo.lock
