@@ -64,7 +64,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.ref }}
 
@@ -93,12 +93,12 @@ jobs:
           Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.dotnet\tools"
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
 
       - name: Install jq
-        uses: dcarbone/install-jq-action@v3.2.0
+        uses: dcarbone/install-jq-action@v4
 
       # rust-toolchain.toml pins 1.98.0; `@stable` here only ensures cargo exists,
       # rustup then honours the file. Matches upstream's ordering.
@@ -184,13 +184,25 @@ jobs:
           # official Jan, rather than colliding with it in Add/Remove Programs.
           sed -i "s/jan_bundleid/jan-cn.ai.app/g" "$tpl"
 
+          # Jan's template hardcodes the directory it expects nsis_tauri_utils.dll
+          # in, but on Windows tauri-bundler keeps that DLL under its own NSIS
+          # toolset cache and tells the template where it is through the
+          # `{{additional_plugins_path}}` placeholder - which is exactly what the
+          # stock Tauri template uses on this line. With the hardcoded path,
+          # makensis cannot resolve the plugin and dies with:
+          #   Plugin not found, cannot call nsis_tauri_utils::SemverCompare
+          # so restore the placeholder and let Tauri fill it in.
+          sed -i 's|^!define ADDITIONALPLUGINSPATH ".*"$|!define ADDITIONALPLUGINSPATH "{{additional_plugins_path}}"|' "$tpl"
+
           echo '--- resolved defines ---'
-          grep -E '^!define (PRODUCTNAME|VERSION|VERSIONWITHBUILD|MAINBINARYNAME|BUNDLEID)' "$tpl"
+          grep -E '^!define (PRODUCTNAME|VERSION|VERSIONWITHBUILD|MAINBINARYNAME|BUNDLEID|ADDITIONALPLUGINSPATH)' "$tpl"
           if grep -q 'jan_workspace\|jan_version\|jan_build\|jan_productname\|jan_mainbinaryname\|jan_bundleid' "$tpl"; then
             echo "error: unresolved jan_* placeholder remains in the NSIS template" >&2
             grep -n 'jan_workspace\|jan_version\|jan_build\|jan_productname\|jan_mainbinaryname\|jan_bundleid' "$tpl" >&2
             exit 1
           fi
+          grep -q '"{{additional_plugins_path}}"' "$tpl" \
+            || { echo "error: ADDITIONALPLUGINSPATH was not switched to Tauri's placeholder" >&2; exit 1; }
           echo 'all NSIS placeholders resolved'
 
       # The engine build plus the Rust target dir is the largest consumer on the
@@ -265,14 +277,14 @@ jobs:
 
       - name: Upload the engine build log on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: engine-build-log
           path: src-tauri/target/engine-build.log
           if-no-files-found: ignore
 
       - name: Upload the NSIS installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: jan-cn-${{ inputs.version }}-nsis
           path: src-tauri/target/release/bundle/nsis/*.exe
@@ -282,7 +294,7 @@ jobs:
         # The MSI target is dropped automatically for prerelease versions, so a
         # missing MSI is expected rather than a failure.
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: jan-cn-${{ inputs.version }}-msi
           path: src-tauri/target/release/bundle/msi/*.msi
