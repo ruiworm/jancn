@@ -92,10 +92,17 @@ jobs:
           }
           Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.dotnet\tools"
 
+      # `package-manager-cache` defaults to true on setup-node v5, which makes it
+      # shell out to `yarn cache dir` during setup. At that point the global yarn
+      # is still 1.22.22 while package.json declares yarn@4.5.3 via
+      # `packageManager`, so yarn refuses and the step fails before the Corepack
+      # step below ever runs. Caching is not worth reordering setup for: Yarn 4
+      # has its own global cache, and the repo ships a yarn.lock.
       - name: Set up Node
         uses: actions/setup-node@v5
         with:
           node-version: 20
+          package-manager-cache: false
 
       - name: Install jq
         uses: dcarbone/install-jq-action@v4
