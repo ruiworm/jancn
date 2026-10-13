@@ -327,7 +327,98 @@ cargo 会缓存上一次构建结果——不强制重编译的话，
 打印 `running 0 tests` 却"通过"。`run.ps1` 因此在每次 cargo 输出里
 显式检查 `test result:` 行，**0 个测试会被判为失败**，避免假绿。
 
-当前结果：**29 个断言全部通过**。
+当前结果：**41 个断言全部通过**（4 种镜像配置 × 9 + 托盘 5 + 前端 6，含新增的
+「空值视为未设置」回归用例）。
+
+---
+
+## 七、在 GitHub 上打包（已跑通）
+
+fork 里新增了 `.github/workflows/build-zh-cn-fork.yml`，
+**不使用上游的 Windows 模板**，原因是上游那条路对 fork 是死的：
+
+| 上游行为 | 位置 | 对 fork 的后果 |
+| --- | --- | --- |
+| 硬设 `JAN_ENGINE_REQUIRE_SIGNING: '1'` | `template-tauri-build-windows-x64.yml:341` | `sign-engine.sh:50-53` 缺 Azure 证书即 `exit 1`，而 `Makefile:538` 无条件调用 → **构建必失败** |
+| 注入 `signCommand = ./sign.ps1` | 同上 `:184` | `sign.ps1` 直接调 AzureSignTool |
+| 读 `*.sig` | 同上 `:420/426` | 无 `TAURI_SIGNING_PRIVATE_KEY` 就没有 `.sig` |
+
+新 workflow 不需要任何私有 secret（工具链 action 只从公开源拉 ccache/Ninja/LLVM/Vulkan SDK），
+产出**未签名**的 NSIS 安装包，通过 Actions artifact 下载。
+
+### 7.1 三个串联的打包阻塞（都已修复，且都先在本地 git-bash 对真实模板验证）
+
+**(A) `Plugin not found, cannot call nsis_tauri_utils::SemverCompare`**
+
+`src-tauri/tauri.bundle.windows.nsis.template:47` 把 `ADDITIONALPLUGINSPATH`
+**硬编码**成一个由 `jan_workspace` 拼出来的字面路径。
+但在 Windows 上 `tauri-bundler` 把 `nsis_tauri_utils.dll` 放在**它自己的 NSIS toolset 缓存**里，
+并通过 `{{additional_plugins_path}}` 占位符告诉模板地址——这正是
+Tauri 官方模板在同一行用的写法（`tauri-bundler` 源码注释：
+*"either our Plugins copy (when signing) or the **cache**/Plugins/x86-unicode path"*）。
+上游能跑通是因为……实际上这里就是个上游缺陷，我们的 workflow 把该 define 改回占位符。
+
+**(B) `invalid VIProductVersion format, should be X.X.X.X`**
+
+模板把 `jan_build` 直接喂给 NSIS 的 `VIProductVersion`，而该字段**必须**是四段数字。
+我最初只填了裸 build 号（`1`）。上游的写法是 `base.build`：
+
+```
+0.8.5      -> 0.8.5.0
+0.8.5-cn1  -> 0.8.5.1
+```
+
+**(C) `optional pre-release identifier must be numeric-only ... for msi target`**
+
+MSI 的版本字段是 major.minor.patch.build 且 build 必须为数字，
+所以默认版本 `0.8.5-cn1` 的 `cn1` **根本没有 MSI 形式**。
+上游对此有专门的守卫，我漏了。现在按同样逻辑在该情形下把
+`bundle.targets` 改为仅 `["nsis"]`。
+
+> 这三个错误的共同点：**都在编译了约 45 分钟之后才在最后一步暴露**。
+> 所以现在 (B)(C) 都有前置断言 / 前置改写，让同类错误在几秒内失败。
+
+另外顺手修了一个我自己的引入问题：`actions/setup-node@v5` 默认开启
+`package-manager-cache`，它会在 Corepack 启用**之前**调 `yarn cache dir`，
+而那时全局 yarn 还是 1.22.22、`packageManager` 又声明了 `yarn@4.5.3`，
+于是整个 job 在 9 秒内失败。已改为 `package-manager-cache: false`。
+
+### 7.2 实测产物
+
+| 项 | 值 |
+| --- | --- |
+| run | [38393224022](https://github.com/ruiworm/jancn/actions/runs/38393224022) |
+| commit | `dc1ef41` |
+| 结果 | **success**，16/16 步全过，耗时 45m41s |
+| 产物 | `jan-cn-0.8.5-cn1-nsis` → `Jan_0.8.5-cn1_x64-setup.exe`，**66.3 MB**（69,549,605 字节） |
+
+已下载并校验：ZIP 结构有效（`PK` 魔数）、内部为真 PE（`MZ` 头）、
+Windows 版本信息为 `ProductName = Jan-CN`、`FileVersion = 0.8.5`。
+
+下载方式：GitHub → Actions → 该 run → 页面底部 Artifacts。
+
+### 7.3 仍未验证 / 已知限制
+
+- **未签名**：Windows SmartScreen 会拦截，需手动「仍要运行」。
+  要正式分发必须自购代码签名证书（约 $100–400/年），这一步我无法代做。
+- **应用内「检查更新」不可用**：`tauri.conf.json` 的 updater 仍指向
+  `apps.jan.ai` / GitHub，且 Tauri 用 Menlo 的 minisign 公钥验签，
+  自建更新源必须同时换成你自己的密钥。
+- **未在真机安装运行过**：我只验证到「安装包已生成且元数据正确」，
+  **没有**实际装到 Windows 上跑一遍。托盘中文是否显示、模型下载是否真走
+  hf-mirror，都需要你装完确认。
+- `MODEL_CATALOG_URL` 仍指向 `raw.githubusercontent.com`，
+  国内会导致模型列表为空——见 §4。
+
+### 7.4 重新构建
+
+```powershell
+gh workflow run build-zh-cn-fork.yml --repo ruiworm/jancn `
+  -f version=0.8.5-cn1 -f engine_variant=vulkan -f hf_mirror=https://hf-mirror.com
+```
+
+版本号里的后缀决定打包目标：非数字后缀（如 `-cn1`）只出 NSIS；
+`0.8.5` 或 `0.8.5-1213` 这类会同时出 NSIS 和 MSI。
 
 ### 6.4 仍然建议你本地做一次完整构建
 
