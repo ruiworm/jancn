@@ -193,23 +193,31 @@ jobs:
           fi
           echo 'all NSIS placeholders resolved'
 
+      # The engine build plus the Rust target dir is the largest consumer on the
+      # runner. Android/.NET/Java toolchains are unused here and are the usual
+      # reclaimable space; `df` before and after shows whether it was needed.
+      # Sizes are measured with `du -s`, not `du -sh`: the human-readable walk
+      # over a large tree costs minutes on this image for no extra information.
       - name: Free disk space
         shell: bash
-        # The engine build plus the Rust target dir comfortably exceeds the
-        # default Windows runner allocation; Android/.NET/Java toolchains are
-        # never used by this job.
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          echo "--- before ---"
+          df -h /c | tail -1
+
+          freed=0
           for d in \
             "/c/Program Files/Android" \
             "/c/Program Files (x86)/Android" \
-            "/c/Program Files/dotnet" \
             "/c/Program Files/Java" \
-            "/c/Program Files/Microsoft/jdk" \
-            "/c/ProgramData/chocolatey/lib"
+            "/c/Program Files/Microsoft/jdk"
           do
-            [ -e "$d" ] && du -sh "$d" 2>/dev/null || true
+            [ -e "$d" ] || continue
+            rm -rf "$d" 2>/dev/null && freed=$((freed + 1)) || true
           done
+          echo "removed $freed unused toolchain dir(s)"
+
+          echo "--- after ---"
           df -h /c | tail -1
 
       - name: Set up the engine toolchain
