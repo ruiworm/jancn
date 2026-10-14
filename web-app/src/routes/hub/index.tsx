@@ -62,6 +62,20 @@ import { MlxModelDownloadAction } from '@/containers/MlxModelDownloadAction'
 import { DEFAULT_MODEL_QUANTIZATIONS } from '@/constants/models'
 import { Button } from '@/components/ui/button'
 import { RenderMarkdown } from '@/containers/RenderMarkdown'
+import { useHardware } from '@/hooks/useHardware'
+import {
+  DEFAULT_CTX_LENGTH,
+  estimateModelFit,
+  parseFileSize,
+  type FitTier,
+} from '@/lib/modelCompatibility'
+
+const FIT_TIER_RANK: Record<FitTier, number> = {
+  green: 0,
+  yellow: 1,
+  unknown: 2,
+  red: 3,
+}
 
 type SearchParams = {
   repo: string
@@ -111,8 +125,13 @@ function HubContent() {
   const serviceHub = useServiceHub()
 
   const { t } = useTranslation()
+  const hardwareData = useHardware((state) => state.hardwareData)
 
   const sortOptions = [
+    {
+      value: 'recommended',
+      name: t('hub:sortRecommended', { defaultValue: '硬件推荐' }),
+    },
     { value: 'newest', name: t('hub:sortNewest') },
     { value: 'most-downloaded', name: t('hub:sortMostDownloaded') },
     ...(IS_MACOS
@@ -145,7 +164,7 @@ function HubContent() {
   )
 
   const [searchValue, setSearchValue] = useState('')
-  const [sortSelected, setSortSelected] = useState('newest')
+  const [sortSelected, setSortSelected] = useState('recommended')
   const [expandedModels, setExpandedModels] = useState<Record<string, boolean>>(
     {}
   )
@@ -177,7 +196,34 @@ function HubContent() {
       sorted = sorted.filter((m) => !m.is_mlx)
     }
 
+    const getModelFitRank = (m: CatalogModel): number => {
+      if (!hardwareData) return 2
+      const defaultQuant = selectDefaultQuant(
+        m.quants,
+        DEFAULT_MODEL_QUANTIZATIONS
+      )
+      const sizeBytes = parseFileSize(defaultQuant?.file_size)
+      const tier = estimateModelFit(
+        sizeBytes,
+        DEFAULT_CTX_LENGTH,
+        hardwareData
+      )
+      return FIT_TIER_RANK[tier] ?? 2
+    }
+
     // Apply sorting
+    if (sortSelected === 'recommended') {
+      return sorted.sort((a, b) => {
+        const fitDiff = getModelFitRank(a) - getModelFitRank(b)
+        if (fitDiff !== 0) return fitDiff
+        return (
+          (b.downloads || 0) - (a.downloads || 0) ||
+          new Date(b.created_at || 0).getTime() -
+            new Date(a.created_at || 0).getTime()
+        )
+      })
+    }
+
     if (sortSelected === 'most-downloaded') {
       return sorted.sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
     }
@@ -186,7 +232,7 @@ function HubContent() {
         new Date(b.created_at || 0).getTime() -
         new Date(a.created_at || 0).getTime()
     )
-  }, [sortSelected, sources])
+  }, [sortSelected, sources, hardwareData])
 
   // Filtered models (debounced search)
   const [debouncedSearchValue, setDebouncedSearchValue] = useState(searchValue)
