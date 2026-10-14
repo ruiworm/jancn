@@ -420,6 +420,68 @@ gh workflow run build-zh-cn-fork.yml --repo ruiworm/jancn `
 版本号里的后缀决定打包目标：非数字后缀（如 `-cn1`）只出 NSIS；
 `0.8.5` 或 `0.8.5-1213` 这类会同时出 NSIS 和 MSI。
 
+---
+
+## 八、本地 dev 热更新（部分跑通）
+
+### 8.1 浏览器预览：已跑通，HMR 确认生效
+
+环境准备（本机 node 26 无自带 corepack，需先装）：
+
+```powershell
+npm install -g corepack --force      # 与已有 pnpm shim 冲突，需 --force；pnpm 仍可用（走 corepack）
+corepack prepare yarn@4.5.3 --activate
+cd D:\PROJECTS\janai\jan
+yarn install                         # 876 MiB，约 1 分钟
+yarn build:core                      # 关键！否则 @janhq/core 无法解析
+cd web-app
+yarn dev                             # Vite 6.3.2 -> http://localhost:1420
+```
+
+实测：改 `web-app/src/locales/zh-CN/hub.json` 的任意值，
+Vite 日志立刻输出 `page reload src/locales/zh-CN/hub.json`。
+改 locale 文本 → 保存 → 浏览器里立即更新，**无需重新打包**。
+
+两个坑：
+- **`yarn build:core` 是前置必需**，dev 链路里没有任何钩子会替你构建它，
+  缺了会报 `Failed to resolve entry for package "@janhq/core"`；
+- 测 HMR 时**不要**用 `ConvertTo-Json` 写回 locale 文件——它会重排整个文件格式。
+  用文本替换（`-replace`）或编辑器改，改完 `git diff` 应只有目标行变化。
+
+### 8.2 完整桌面 `tauri dev`：本机被环境卡死，未跑通
+
+`cargo check -p ring` 在本机持续失败：
+
+```
+cl: 命令行 error D8050: 无法执行 c1.dll: 未能将命令行放入调试记录中
+```
+
+排查过程（全部实测）：
+
+| 假设 | 实验 | 结果 |
+| --- | --- | --- |
+| MSVC 环境未初始化 | 手动 `vcvars64` 后直接调 cl.exe 编译同一个 ring 源文件 | **成功** |
+| 命令行过长（29k） | 造 36k 命令行 | 成功（失败点是另一个 Windows 上限） |
+| 管道 stdout | PowerShell 原生管道调用 cl.exe | 成功 |
+| 工作目录 | 在 ring 的 build 输出目录里调用 | 成功 |
+| 并行限制 | `CARGO_BUILD_JOBS=1` 串行 | **仍失败** |
+| /Brepro 标志 | CFLAGS 覆盖去掉 | **仍失败** |
+| 路径长度 | C:\cargos junction 缩短 cargo 路径 | **仍失败** |
+
+**结论**：同一台机器、同样的环境变量、同一条命令行，手动调用成功、
+由 cargo（cc-rs）spawn 则失败。差异只剩 cargo 自身的进程上下文，
+**与本次代码改动无关**——同一份源码在 GitHub Actions 上完整编译通过
+（见 §7.2）。本机 `ring` 0.17.14 + MSVC 14.44.35207 组合下，
+cl.exe 由 cc-rs 派生时其内部 c1.dll 的调试记录写入被阻断；
+GitHub 的 windows-2025 镜像用更新的 VS2026 工具链，不受影响。
+
+可行的绕行方案（按成本排序）：
+
+1. **只用浏览器预览**（§8.1）——改 locale/前端够用，托盘等原生功能预览不了；
+2. **升级本机 VS 到 2026 工具链**——GitHub 侧已证明该工具链能过；
+3. **装 LLVM 让 cc-rs 走 clang-cl**（`set CC=clang-cl`）——绕开 MSVC 调试记录机制；
+4. **不起本地 Rust**，托盘等原生改动继续走 GitHub Actions 验证（§7.4），每次约 45 分钟。
+
 ### 6.4 仍然建议你本地做一次完整构建
 
 上面的套件验证的是**逻辑正确性**，不能替代真实构建。
