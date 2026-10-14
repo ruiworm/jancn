@@ -338,7 +338,17 @@
     "reportIssue": "Report Issue",
     "credits": "Credits",
     "creditsDesc1": "👋 Jan is built with ❤️ by the Menlo Research team.",
-    "creditsDesc2": "Special thanks to our open-source dependencies—especially llama.cpp and Tauri—and to our amazing AI community."
+    "creditsDesc2": "Special thanks to our open-source dependencies—especially llama.cpp and Tauri—and to our amazing AI community.",
+    "enterTokenPrompt": "Please enter a Hugging Face token to validate",
+    "tokenValid": "Token is valid",
+    "tokenValidDesc": "Your Hugging Face token is valid.",
+    "signedInAs": "Signed in as {{name}}",
+    "tokenInvalid": "Token invalid",
+    "tokenInvalidDesc": "The provided Hugging Face token is invalid. Please check your token and try again.",
+    "tokenTimeout": "Validation timed out",
+    "tokenTimeoutDesc": "The validation request timed out. Please check your network connection and try again.",
+    "tokenFailed": "Validation failed",
+    "tokenFailedDesc": "A network error occurred while validating the token. Please check your internet connection."
   },
   "extensions": {
     "title": "Extensions"

@@ -444,7 +444,9 @@ function General() {
                         const token = (huggingfaceToken || '').trim()
                         if (!token) {
                           toast.error(
-                            'Please enter a Hugging Face token to validate'
+                            t('settings:general.enterTokenPrompt', {
+                              defaultValue: '请输入 Hugging Face 令牌进行验证',
+                            })
                           )
                           return
                         }
@@ -464,29 +466,69 @@ function General() {
                           )
                           if (resp.ok) {
                             const data = await resp.json()
-                            toast.success('Token is valid', {
-                              description: data?.name
-                                ? `Signed in as ${data.name}`
-                                : 'Your Hugging Face token is valid.',
-                            })
+                            toast.success(
+                              t('settings:general.tokenValid', {
+                                defaultValue: '令牌有效',
+                              }),
+                              {
+                                description: data?.name
+                                  ? t('settings:general.signedInAs', {
+                                      defaultValue: `已登录为 ${data.name}`,
+                                      name: data.name,
+                                    })
+                                  : t('settings:general.tokenValidDesc', {
+                                      defaultValue: '您的 Hugging Face 令牌有效。',
+                                    }),
+                              }
+                            )
                           } else {
-                            toast.error('Token invalid', {
-                              description:
-                                'The provided Hugging Face token is invalid. Please check your token and try again.',
-                            })
+                            toast.error(
+                              t('settings:general.tokenInvalid', {
+                                defaultValue: '令牌无效',
+                              }),
+                              {
+                                description: t(
+                                  'settings:general.tokenInvalidDesc',
+                                  {
+                                    defaultValue:
+                                      '提供的 Hugging Face 令牌无效，请检查并重试。',
+                                  }
+                                ),
+                              }
+                            )
                           }
                         } catch (e) {
                           const name = (e as { name?: string })?.name
                           if (name === 'AbortError') {
-                            toast.error('Validation timed out', {
-                              description:
-                                'The validation request timed out. Please check your network connection and try again.',
-                            })
+                            toast.error(
+                              t('settings:general.tokenTimeout', {
+                                defaultValue: '验证超时',
+                              }),
+                              {
+                                description: t(
+                                  'settings:general.tokenTimeoutDesc',
+                                  {
+                                    defaultValue:
+                                      '验证请求超时，请检查网络连接并重试。',
+                                  }
+                                ),
+                              }
+                            )
                           } else {
-                            toast.error('Validation failed', {
-                              description:
-                                'A network error occurred while validating the token. Please check your internet connection.',
-                            })
+                            toast.error(
+                              t('settings:general.tokenFailed', {
+                                defaultValue: '验证失败',
+                              }),
+                              {
+                                description: t(
+                                  'settings:general.tokenFailedDesc',
+                                  {
+                                    defaultValue:
+                                      '验证令牌时发生网络错误，请检查网络连接。',
+                                  }
+                                ),
+                              }
+                            )
                           }
                         } finally {
                           clearTimeout(timeoutId)
@@ -494,7 +536,7 @@ function General() {
                         }
                       }}
                     >
-                      Verify
+                      {t('common:verify', { defaultValue: '验证' })}
                     </Button>
                   </div>
                 }

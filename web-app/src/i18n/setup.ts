@@ -54,11 +54,15 @@ Object.entries(localeFiles).forEach(([path, module]) => {
 // Get stored language preference
 const getStoredLanguage = (): string => {
   try {
+    const explicit = localStorage.getItem('jan_user_selected_language')
+    if (explicit) return explicit
     const stored = localStorage.getItem(localStorageKey.settingGeneral)
     const parsed = stored ? JSON.parse(stored) : {}
-    return parsed?.state?.currentLanguage || 'en'
+    const lang = parsed?.state?.currentLanguage
+    if (lang && lang !== 'en') return lang
+    return 'zh-CN'
   } catch {
-    return 'en'
+    return 'zh-CN'
   }
 }
 

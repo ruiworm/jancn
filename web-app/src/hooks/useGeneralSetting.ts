@@ -24,7 +24,7 @@ type GeneralSettingState = {
 export const useGeneralSetting = create<GeneralSettingState>()(
   persist(
     (set) => ({
-      currentLanguage: 'en',
+      currentLanguage: 'zh-CN',
       spellCheckChatInput: true,
       tokenCounterCompact: true,
       autoUpdateCheck: true,
@@ -81,6 +81,20 @@ export const useGeneralSetting = create<GeneralSettingState>()(
         autoUpdateCheck: state.autoUpdateCheck,
         stripReasoningFromContext: state.stripReasoningFromContext,
       }),
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState ?? {}) as Partial<GeneralSettingState>
+        const currentLanguage =
+          persisted.currentLanguage === 'en' &&
+          typeof localStorage !== 'undefined' &&
+          !localStorage.getItem('jan_user_selected_language')
+            ? ('zh-CN' as Language)
+            : (persisted.currentLanguage || ('zh-CN' as Language))
+        return {
+          ...currentState,
+          ...persisted,
+          currentLanguage,
+        }
+      },
     }
   )
 )

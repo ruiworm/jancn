@@ -35,6 +35,9 @@ export default function LanguageSwitcher() {
   const { setCurrentLanguage, currentLanguage } = useGeneralSetting()
 
   const changeLanguage = (lng: string) => {
+    try {
+      localStorage.setItem('jan_user_selected_language', lng)
+    } catch {}
     i18n.changeLanguage(lng)
     setCurrentLanguage(lng as Language)
   }

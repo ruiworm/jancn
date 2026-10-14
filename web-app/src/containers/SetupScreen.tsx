@@ -744,9 +744,18 @@ function SetupScreen() {
                 </div>
 
                 {currentPage.id === 'welcome' && (
-                  <Button className="mt-6 w-full" onClick={beginSetup}>
-                    {t('setup:startSetup')}
-                  </Button>
+                  <div className="mt-6 flex flex-col items-center gap-2">
+                    <Button className="w-full" onClick={beginSetup}>
+                      {t('setup:startSetup')}
+                    </Button>
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                      onClick={() => navigate({ to: route.settings.general })}
+                    >
+                      {t('common:settings')}
+                    </button>
+                  </div>
                 )}
 
                 {/* The one fact a user cannot infer from a progress line:
@@ -889,14 +898,24 @@ function SetupScreen() {
                       isDownloaded={Boolean(isDownloaded)}
                       onDownload={handleQuickStart}
                     />
-                    <button
-                      type="button"
-                      className="mt-3 inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-                      onClick={() => navigate({ to: route.hub.index })}
-                    >
-                      {t('setup:exploreHub')}
-                      <IconArrowRight size={12} />
-                    </button>
+                    <div className="mt-3 flex items-center justify-between">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                        onClick={() => navigate({ to: route.hub.index })}
+                      >
+                        {t('setup:exploreHub')}
+                        <IconArrowRight size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                        onClick={() => navigate({ to: route.settings.general })}
+                      >
+                        {t('common:settings')}
+                        <IconArrowRight size={12} />
+                      </button>
+                    </div>
                   </div>
                 )}
               </>

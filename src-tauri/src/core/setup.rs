@@ -287,7 +287,7 @@ static TRAY_LANGUAGE: std::sync::OnceLock<std::sync::Mutex<TrayLanguage>> =
 
 #[cfg(feature = "desktop")]
 fn tray_language_cell() -> &'static std::sync::Mutex<TrayLanguage> {
-    TRAY_LANGUAGE.get_or_init(|| std::sync::Mutex::new(TrayLanguage::En))
+    TRAY_LANGUAGE.get_or_init(|| std::sync::Mutex::new(TrayLanguage::ZhCn))
 }
 
 /// Stores the active tray language; does not touch the live tray.
@@ -303,7 +303,7 @@ pub fn current_tray_language() -> TrayLanguage {
     tray_language_cell()
         .lock()
         .map(|guard| *guard)
-        .unwrap_or(TrayLanguage::En)
+        .unwrap_or(TrayLanguage::ZhCn)
 }
 
 /// Rebuilds the tray menu so a language change takes effect without a restart.

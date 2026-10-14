@@ -7,6 +7,7 @@
     "unresolvedAssets_other": "{{count}} asset references can't load in the preview. Relative paths have no base URL to resolve against."
   },
   "assistants": "Assistants",
+  "verify": "Verify",
   "hardware": "Hardware",
   "mcp-servers": "MCP Servers",
   "local_api_server": "Local API Server",

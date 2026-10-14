@@ -338,7 +338,17 @@
     "creditsDesc1": "Jan 由 Menlo 团队用 ❤️ 构建。",
     "creditsDesc2": "特别感谢我们的开源依赖项——尤其是 llama.cpp 和 Tauri——以及我们出色的 AI 社区。",
     "huggingfaceToken": "HuggingFace 令牌",
-    "huggingfaceTokenDesc": "您用于访问模型的 HuggingFace API 令牌。"
+    "huggingfaceTokenDesc": "您用于访问模型的 HuggingFace API 令牌。",
+    "enterTokenPrompt": "请输入 Hugging Face 令牌进行验证",
+    "tokenValid": "令牌有效",
+    "tokenValidDesc": "您的 Hugging Face 令牌有效。",
+    "signedInAs": "已登录为 {{name}}",
+    "tokenInvalid": "令牌无效",
+    "tokenInvalidDesc": "提供的 Hugging Face 令牌无效，请检查并重试。",
+    "tokenTimeout": "验证超时",
+    "tokenTimeoutDesc": "验证请求超时，请检查网络连接并重试。",
+    "tokenFailed": "验证失败",
+    "tokenFailedDesc": "验证令牌时发生网络错误，请检查网络连接。"
   },
   "extensions": {
     "title": "扩展"
