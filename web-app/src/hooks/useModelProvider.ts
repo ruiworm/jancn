@@ -68,11 +68,23 @@ export const useModelProvider = create<ModelProviderState>()(
           providers = IS_MACOS
             ? providers
             : providers.filter((e) => e.provider !== 'mlx')
+          const legacyRemovedProviders = new Set([
+            'openai',
+            'azure',
+            'anthropic',
+            'openrouter',
+            'mistral',
+            'groq',
+            'xai',
+            'gemini',
+            'minimax',
+            'huggingface',
+            'nvidia',
+            'llama.cpp',
+          ])
           const existingProviders = state.providers
             .filter((e) => IS_MACOS || e.provider !== 'mlx')
-            // Filter out legacy llama.cpp provider for migration
-            // Can remove after a couple of releases
-            .filter((e) => e.provider !== 'llama.cpp')
+            .filter((e) => !legacyRemovedProviders.has(e.provider))
             .map((provider) => {
               return {
                 ...provider,

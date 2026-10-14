@@ -2,7 +2,7 @@ import TextareaAutosize from 'react-textarea-autosize'
 import { cn, formatBytes } from '@/lib/utils'
 import { usePrompt } from '@/hooks/usePrompt'
 import { useThreads } from '@/hooks/useThreads'
-import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react'
+import { useCallback, useEffect, useRef, useState, memo } from 'react'
 import type { ReactNode } from 'react'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
@@ -27,14 +27,12 @@ import {
   IconMusic,
   IconVideo,
   IconBrain,
-  IconTool,
   IconCodeCircle2,
   IconPlayerStopFilled,
   IconX,
   IconPaperclip,
   IconLoader2,
   IconWorldSearch,
-  IconBrandChrome,
   IconDots,
 } from '@tabler/icons-react'
 import { generateId } from 'ai'
@@ -69,17 +67,14 @@ import { defaultModel } from '@/lib/models'
 import { cancelAgentThreadBash } from '@/lib/agentTools'
 import { useAssistant } from '@/hooks/useAssistant'
 import { AssistantSwitcher } from '@/containers/AssistantSwitcher'
-import DropdownToolsAvailable from '@/containers/DropdownToolsAvailable'
 import { useServiceHub } from '@/hooks/useServiceHub'
 import { useTools } from '@/hooks/useTools'
 import { TokenCounter } from '@/components/TokenCounter'
 import type { TokenUsageSource } from '@/hooks/useTokensCount'
 import { useMessages } from '@/hooks/useMessages'
 import { useShallow } from 'zustand/react/shallow'
-import { McpExtensionToolLoader } from './McpExtensionToolLoader'
 import {
   ExtensionTypeEnum,
-  MCPExtension,
   fs,
   VectorDBExtension,
 } from '@janhq/core'
@@ -107,8 +102,6 @@ import {
   resolveAutoInlineBudget,
 } from '@/lib/attachmentProcessing'
 import { activePathTokens } from '@/lib/message-branching'
-import JanBrowserExtensionDialog from '@/containers/dialogs/JanBrowserExtensionDialog'
-import { useJanBrowserExtension } from '@/hooks/useJanBrowserExtension'
 import { useAgentMode } from '@/hooks/useAgentMode'
 import { useWebSearchConfig } from '@/hooks/useWebSearchConfig'
 import {
@@ -275,7 +268,6 @@ const ChatInput = memo(function ChatInput({
     controlRowWidth < CONTROL_ROW_COLLAPSE_WIDTH
   const serviceHub = useServiceHub()
   const abortControllers = useAppState((state) => state.abortControllers)
-  const tools = useAppState((state) => state.tools)
   const cancelToolCall = useAppState((state) => state.cancelToolCall)
   const prompt = usePrompt((state) => state.prompt)
   const setPrompt = usePrompt((state) => state.setPrompt)
@@ -485,10 +477,6 @@ const ChatInput = memo(function ChatInput({
   const { maxTokens: liveMaxTokens, configuredCtxLen } =
     useTokensCount(threadMessages || [])
   const [message, setMessage] = useState('')
-  const [dropdownToolsAvailable, setDropdownToolsAvailable] = useState(false)
-  const [tooltipShown, setTooltipShown] = useState<
-    'tools' | 'assistants' | false
-  >(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const [hasMmproj, setHasMmproj] = useState(false)
   const activeModels = useAppState(useShallow((state) => state.activeModels))
@@ -514,34 +502,6 @@ const ChatInput = memo(function ChatInput({
     setSelectedAssistantId(projectAssistantId || currentAssistant?.id || '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, projectAssistantId])
-
-  // Jan Browser Extension hook
-  const {
-    hasConfig: hasJanBrowserMCPConfig,
-    isActive: janBrowserMCPActive,
-    isLoading: isJanBrowserMCPLoading,
-    dialogOpen: extensionDialogOpen,
-    dialogState: extensionDialogState,
-    toggleBrowser: handleBrowseClick,
-    disableDueToIncompatibleModel,
-    handleCancel: handleExtensionDialogCancel,
-    setDialogOpen: setExtensionDialogOpen,
-  } = useJanBrowserExtension()
-
-  // Check if model supports browser feature (requires both vision and tools)
-  const modelSupportsBrowser = useMemo(() => {
-    const capabilities = selectedModel?.capabilities || []
-    return capabilities.includes('vision') && capabilities.includes('tools')
-  }, [selectedModel?.capabilities])
-
-  // Auto-disable browser feature when model doesn't support it
-  useEffect(() => {
-    if (janBrowserMCPActive && !modelSupportsBrowser) {
-      disableDueToIncompatibleModel()
-    }
-    // disableDueToIncompatibleModel omitted: its !isActive guard makes stale closures safe.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [janBrowserMCPActive, modelSupportsBrowser])
 
   const attachmentsEnabled = useAttachments((s) => s.enabled)
   const parsePreference = useAttachments((s) => s.parseMode)
@@ -637,15 +597,6 @@ const ChatInput = memo(function ChatInput({
 
     checkMmprojSupport()
   }, [selectedModel, selectedModel?.capabilities, selectedProvider, serviceHub])
-
-  // Check if there are active MCP servers
-  const hasActiveMCPServers =
-    tools.filter((tool) => tool.server !== 'Jan Browser MCP').length > 0
-
-  // Get MCP extension and its custom component
-  const extensionManager = ExtensionManager.getInstance()
-  const mcpExtension = extensionManager.get<MCPExtension>(ExtensionTypeEnum.MCP)
-  const MCPToolComponent = mcpExtension?.getToolComponent?.()
 
   const handleSendMessage = async (prompt: string) => {
     if (!selectedModel) {
@@ -849,12 +800,6 @@ const ChatInput = memo(function ChatInput({
       textareaRef.current.focus()
     }
   }, [])
-
-  useEffect(() => {
-    if (tooltipShown && dropdownToolsAvailable) {
-      setTooltipShown(false)
-    }
-  }, [dropdownToolsAvailable, tooltipShown])
 
   // Focus when thread changes
   useEffect(() => {
@@ -2441,48 +2386,6 @@ const ChatInput = memo(function ChatInput({
                     updateCurrentThreadAssistant,
                   }}
                 />
-                {showToolControls && hasJanBrowserMCPConfig && modelSupportsBrowser && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        disabled={isJanBrowserMCPLoading}
-                        className={cn(janBrowserMCPActive && "text-primary")}
-                        onClick={
-                          isJanBrowserMCPLoading
-                            ? undefined
-                            : handleBrowseClick
-                        }
-                      >
-                        {isJanBrowserMCPLoading ? (
-                          <IconLoader2
-                            size={18}
-                            className="text-primary animate-spin"
-                          />
-                        ) : (
-                          <IconBrandChrome
-                            size={18}
-                            className={cn(
-                              'text-muted-foreground',
-                              janBrowserMCPActive && 'text-primary'
-                            )}
-                          />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        {isJanBrowserMCPLoading
-                          ? t('common:starting')
-                          : janBrowserMCPActive
-                            ? t('common:browse') + t('common:activeSuffix')
-                            : t('common:browse')}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-
                 {showToolControls && selectedModel?.capabilities?.includes('embeddings') && (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -2501,69 +2404,6 @@ const ChatInput = memo(function ChatInput({
                     </TooltipContent>
                   </Tooltip>
                 )}
-
-                {showToolControls && selectedModel?.capabilities?.includes('tools') &&
-                  hasActiveMCPServers &&
-                  (MCPToolComponent ? (
-                    // Use custom MCP component
-                    <McpExtensionToolLoader
-                      tools={tools}
-                      hasActiveMCPServers={hasActiveMCPServers}
-                      selectedModelHasTools={
-                        selectedModel?.capabilities?.includes('tools') ?? false
-                      }
-                      MCPToolComponent={MCPToolComponent}
-                    />
-                  ) : (
-                    // Use default tools dropdown
-                    <Tooltip
-                      open={tooltipShown === 'tools'}
-                      onOpenChange={(newValue) => newValue ? setTooltipShown('tools') : setTooltipShown(false)}
-                    >
-                      <TooltipTrigger
-                        asChild
-                        disabled={dropdownToolsAvailable}
-                      >
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={(e) => {
-                            setDropdownToolsAvailable(false)
-                            e.stopPropagation()
-                          }}
-                        >
-                          <DropdownToolsAvailable
-                            onOpenChange={(isOpen) => {
-                              setDropdownToolsAvailable(isOpen)
-                              if (isOpen) {
-                                setTooltipShown(false)
-                              }
-                            }}
-                          >
-                            {() => {
-                              return (
-                                <div
-                                  className={cn(
-                                    'p-1 flex items-center justify-center rounded-sm transition-all duration-200 ease-in-out gap-1 cursor-pointer',
-                                  )}
-                                >
-                                  <IconTool
-                                    size={18}
-                                    className={cn(
-                                      'text-muted-foreground',
-                                    )}
-                                  />
-                                </div>
-                              )
-                            }}
-                          </DropdownToolsAvailable>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t('tools')}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
 
                 {!effectiveAgentMode && selectedModel?.capabilities?.includes('tools') && (
                   <Tooltip>
@@ -3007,13 +2847,6 @@ const ChatInput = memo(function ChatInput({
           <TokenCounter messages={threadMessages || []} source={tokenSource} />
         </div>
       )}
-
-      <JanBrowserExtensionDialog
-        open={extensionDialogOpen}
-        onOpenChange={setExtensionDialogOpen}
-        state={extensionDialogState}
-        onCancel={handleExtensionDialogCancel}
-      />
     </div>
   )
 })

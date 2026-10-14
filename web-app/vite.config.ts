@@ -89,11 +89,11 @@ export default defineConfig(({ mode }) => {
       GA_MEASUREMENT_ID: JSON.stringify(''),
       MODEL_CATALOG_URL: JSON.stringify(
         env.MODEL_CATALOG_URL ||
-          'https://raw.githubusercontent.com/janhq/model-catalog/main/model_catalog_v2.json'
+          'https://fastly.jsdelivr.net/gh/janhq/model-catalog@main/model_catalog_v2.json'
       ),
       LATEST_JAN_MODEL_URL: JSON.stringify(
         env.LATEST_JAN_MODEL_URL ||
-          'https://raw.githubusercontent.com/janhq/model-catalog/main/latest_jan_model.json'
+          'https://fastly.jsdelivr.net/gh/janhq/model-catalog@main/latest_jan_model.json'
       ),
       // Base for direct HuggingFace API calls made from the webview (Hub search,
       // token validation). These do NOT go through the Rust download mirror, so
