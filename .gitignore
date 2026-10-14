@@ -20,6 +20,7 @@ pre-install
 
 # docs
 docs/yarn.lock
+installer-output/
 src-tauri/resources/lib
 src-tauri/icons
 !src-tauri/icons/icon.png

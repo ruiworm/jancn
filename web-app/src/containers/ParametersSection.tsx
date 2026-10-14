@@ -25,6 +25,15 @@ import {
   isModelLevelRejected,
 } from '@/lib/providerCaps'
 import { DynamicControllerSetting } from '@/containers/dynamicControllerSetting'
+import { useTranslation } from '@/i18n/react-i18next-compat'
+import {
+  getTranslatedParamTitle,
+  getTranslatedParamDescription,
+  getTranslatedParamHint,
+  getTranslatedCategoryTitle,
+  getTranslatedGroupTitle,
+  getTranslatedGroupDescription,
+} from '@/lib/translateParams'
 
 export interface ParametersSectionProps {
   params: Record<string, unknown>
@@ -54,6 +63,7 @@ export function ParametersSection({
   providerId,
   modelId,
 }: ParametersSectionProps) {
+  const { t } = useTranslation()
   const modelRejects = (key: string) =>
     !!(providerId && modelId && isModelLevelRejected(key, providerId, modelId))
   const supportIndex = useMemo(() => {
@@ -118,7 +128,9 @@ export function ParametersSection({
     <div className="space-y-3">
       {!hasAny && (
         <div className="text-xs text-muted-foreground py-2">
-          No overrides — using model defaults.
+          {t('common:noOverrides', {
+            defaultValue: '未配置覆盖项 — 使用模型默认参数。',
+          })}
         </div>
       )}
 
@@ -197,7 +209,9 @@ function StandaloneRow({
     <div className="space-y-1">
       <div className="flex items-center gap-2 min-w-0">
         <div className="flex items-center gap-1 min-w-0 flex-1 text-sm">
-          <span className="truncate">{def.title}</span>
+          <span className="truncate">
+            {getTranslatedParamTitle(paramKey, def.title)}
+          </span>
           {unsupported && (
             <IconAlertTriangle
               size={12}
@@ -264,8 +278,12 @@ function GroupBlock({
     <div className="rounded-md border border-border/60 p-3 space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-sm font-medium">{group.title}</div>
-          <div className="text-xs text-muted-foreground">{group.description}</div>
+          <div className="text-sm font-medium">
+            {getTranslatedGroupTitle(group.id, group.title)}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {getTranslatedGroupDescription(group.id, group.description)}
+          </div>
         </div>
         <Button
           variant="ghost"
@@ -286,7 +304,9 @@ function GroupBlock({
             const value = params[memberKey] ?? def.value
             return (
               <div key={memberKey} className="space-y-1">
-                <div className="text-xs text-muted-foreground">{def.title}</div>
+                <div className="text-xs text-muted-foreground">
+                  {getTranslatedParamTitle(memberKey, def.title)}
+                </div>
                 <DynamicControllerSetting
                   controllerType={def.controllerType}
                   controllerProps={{
@@ -319,6 +339,7 @@ function AddParameterMenu({
   onAddGroup,
   modelRejects,
 }: AddParameterMenuProps) {
+  const { t } = useTranslation()
   const items = useMemo(() => {
     return paramCategories
       .map((cat) => {
@@ -351,7 +372,9 @@ function AddParameterMenu({
   if (items.length === 0) {
     return (
       <div className="text-xs text-muted-foreground">
-        No tunable parameters for this provider.
+        {t('common:noTunableParams', {
+          defaultValue: '此提供商没有可微调的参数。',
+        })}
       </div>
     )
   }
@@ -361,7 +384,7 @@ function AddParameterMenu({
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="w-full justify-start">
           <IconPlus size={14} className="mr-1" />
-          Add parameter
+          {t('common:addParameter', { defaultValue: '添加参数' })}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72 max-h-[60vh] overflow-y-auto">
@@ -369,7 +392,7 @@ function AddParameterMenu({
           <div key={cat.id}>
             {catIdx > 0 && <DropdownMenuSeparator />}
             <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              {cat.title}
+              {getTranslatedCategoryTitle(cat.id, cat.title)}
             </DropdownMenuLabel>
             {entries.map((entry) =>
               entry.kind === 'param' ? (
@@ -380,7 +403,9 @@ function AddParameterMenu({
                   className="flex flex-col items-start gap-0.5 py-1.5"
                 >
                   <div className="flex items-center gap-1 w-full">
-                    <span className="text-sm">{entry.def.title}</span>
+                    <span className="text-sm">
+                      {getTranslatedParamTitle(entry.def.key, entry.def.title)}
+                    </span>
                     {entry.support.supportedBy.length === 0 &&
                       entry.support.maybeBy.length > 0 && (
                         <IconAlertTriangle
@@ -390,7 +415,14 @@ function AddParameterMenu({
                       )}
                   </div>
                   <span className="text-xs text-muted-foreground line-clamp-1">
-                    {entry.def.effectHint ?? entry.def.description}
+                    {getTranslatedParamHint(
+                      entry.def.key,
+                      entry.def.effectHint
+                    ) ||
+                      getTranslatedParamDescription(
+                        entry.def.key,
+                        entry.def.description
+                      )}
                   </span>
                 </DropdownMenuItem>
               ) : (
@@ -400,9 +432,14 @@ function AddParameterMenu({
                   onSelect={() => onAddGroup(entry.group)}
                   className="flex flex-col items-start gap-0.5 py-1.5"
                 >
-                  <span className="text-sm">{entry.group.title}</span>
+                  <span className="text-sm">
+                    {getTranslatedGroupTitle(entry.group.id, entry.group.title)}
+                  </span>
                   <span className="text-xs text-muted-foreground line-clamp-1">
-                    {entry.group.description}
+                    {getTranslatedGroupDescription(
+                      entry.group.id,
+                      entry.group.description
+                    )}
                   </span>
                 </DropdownMenuItem>
               )

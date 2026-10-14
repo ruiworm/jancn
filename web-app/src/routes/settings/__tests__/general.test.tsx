@@ -439,17 +439,6 @@ describe('General Settings Route', () => {
     expect(screen.getByTestId('dialog-content')).toBeInTheDocument()
   })
 
-  it('should render external links', async () => {
-    const Component = GeneralRoute.component as React.ComponentType
-    await act(async () => {
-      render(<Component />)
-    })
-
-    // Check for external links
-    const links = screen.getAllByRole('link')
-    expect(links.length).toBeGreaterThan(0)
-  })
-
   it('should handle logs window opening', async () => {
     const Component = GeneralRoute.component as React.ComponentType
     await act(async () => {

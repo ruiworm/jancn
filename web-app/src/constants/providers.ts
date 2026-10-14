@@ -1,12 +1,12 @@
 export const anthropicProviderSettings = [
   {
     key: 'api-key',
-    title: 'API Key',
+    title: 'API 密钥 (API Key)',
     description:
-      "The Anthropic API uses API keys for authentication. Visit your [API Keys](https://console.anthropic.com/settings/keys) page to retrieve the API key you'll use in your requests.",
+      'Anthropic API 用于身份认证的 API 密钥。访问您的 [API Keys](https://console.anthropic.com/settings/keys) 页面获取。',
     controller_type: 'input',
     controller_props: {
-      placeholder: 'Insert API Key',
+      placeholder: '请输入 API 密钥',
       value: '',
       type: 'password',
       input_actions: ['unobscure', 'copy'],
@@ -14,9 +14,9 @@ export const anthropicProviderSettings = [
   },
   {
     key: 'base-url',
-    title: 'Base URL',
+    title: 'API 基础地址 (Base URL)',
     description:
-      'The base endpoint to use. See the [Anthropic API documentation](https://docs.anthropic.com/en/api/getting-started) for more information.',
+      '请求的目标服务端点基础地址。',
     controller_type: 'input',
     controller_props: {
       placeholder: 'https://api.anthropic.com/v1',
@@ -28,12 +28,12 @@ export const anthropicProviderSettings = [
 export const openAIProviderSettings = [
   {
     key: 'api-key',
-    title: 'API Key',
+    title: 'API 密钥 (API Key)',
     description:
-      "The OpenAI API uses API keys for authentication. Visit your [API Keys](https://platform.openai.com/account/api-keys) page to retrieve the API key you'll use in your requests.",
+      'OpenAI API 用于身份认证的 API 密钥。访问您的 [API Keys](https://platform.openai.com/account/api-keys) 页面获取。',
     controller_type: 'input',
     controller_props: {
-      placeholder: 'Insert API Key',
+      placeholder: '请输入 API 密钥',
       value: '',
       type: 'password',
       input_actions: ['unobscure', 'copy'],
@@ -41,9 +41,9 @@ export const openAIProviderSettings = [
   },
   {
     key: 'base-url',
-    title: 'Base URL',
+    title: 'API 基础地址 (Base URL)',
     description:
-      'The base endpoint to use. See the [OpenAI API documentation](https://platform.openai.com/docs/api-reference/chat/create) for more information.',
+      '请求的目标服务端点基础地址。',
     controller_type: 'input',
     controller_props: {
       placeholder: 'https://api.openai.com/v1',

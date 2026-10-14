@@ -11,8 +11,6 @@ import {
   IconFeather,
   IconPalette,
   IconPlus,
-  IconTopologyStar3,
-  IconLock,
   IconCpu,
   IconWorld,
   IconWorldSearch,
@@ -221,22 +219,6 @@ const SettingsMenu = () => {
       isEnabled: true,
       icon: IconCpu,
     },
-    { title: 'common:privacy', route: route.settings.privacy, icon: IconLock },
-  ]
-
-  const integrationSettings = [
-    {
-      title: 'common:mcp-servers',
-      route: route.settings.mcp_servers,
-      icon: IconTopologyStar3,
-    },
-    {
-      title: 'common:claude_code',
-      route: route.settings.claude_code,
-      icon: ({ size, className }: { size?: number; className?: string }) => (
-        <img src="/images/code-claude.svg" width={size} height={size} className={cn(className, 'dark:invert opacity-60')} />
-      ),
-    },
   ]
 
   return (
@@ -257,28 +239,6 @@ const SettingsMenu = () => {
               </Link>
             </div>
           ))}
-
-          {/* Integrations section */}
-          <div className="mt-4">
-            <span className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {t('common:integrations')}
-              <span className="text-[11px] capitalize ml-2 font-medium px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400">
-                {t('common:experimental')}
-              </span>
-            </span>
-            <div className="mt-1 flex flex-col gap-1">
-              {integrationSettings.map((menu) => (
-                <Link
-                  key={menu.title}
-                  to={menu.route}
-                  className="flex items-center gap-2 px-2 py-1 cursor-pointer hover:dark:bg-secondary/60 hover:bg-secondary rounded-sm [&.active]:dark:bg-secondary/80 [&.active]:bg-secondary"
-                >
-                  <menu.icon size={18} className="shrink-0 text-muted-foreground" />
-                  <span>{t(menu.title)}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
 
           {/* Model Providers section */}
           <div className="mt-4">

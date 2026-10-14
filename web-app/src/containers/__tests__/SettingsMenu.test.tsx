@@ -108,7 +108,6 @@ describe('SettingsMenu', () => {
 
     expect(screen.getByText('common:general')).toBeInTheDocument()
     expect(screen.getByText('common:appearance')).toBeInTheDocument()
-    expect(screen.getByText('common:privacy')).toBeInTheDocument()
   })
 
   it('renders core settings links', () => {
@@ -116,7 +115,6 @@ describe('SettingsMenu', () => {
     expect(screen.getByText('common:keyboardShortcuts')).toBeInTheDocument()
     expect(screen.getByText('common:assistants')).toBeInTheDocument()
     expect(screen.getByText('common:local_api_server')).toBeInTheDocument()
-    expect(screen.getByText('common:privacy')).toBeInTheDocument()
   })
 
   it('lists the Cowork settings entry where Cowork ships', () => {
@@ -129,12 +127,6 @@ describe('SettingsMenu', () => {
     render(<SettingsMenu />)
     expect(screen.queryByText('common:cowork')).not.toBeInTheDocument()
     expect(screen.getByText('common:general')).toBeInTheDocument()
-  })
-
-  it('renders integrations links', () => {
-    render(<SettingsMenu />)
-    expect(screen.getByText('common:mcp-servers')).toBeInTheDocument()
-    expect(screen.getByText('common:claude_code')).toBeInTheDocument()
   })
 
   it('shows provider expansion chevron when providers are active', () => {

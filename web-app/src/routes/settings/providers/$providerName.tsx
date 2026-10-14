@@ -49,6 +49,10 @@ import {
   supportsRemoteCatalog,
   fetchTopRemoteModels,
 } from '@/lib/remoteModelCatalog'
+import {
+  getTranslatedParamTitle,
+  getTranslatedParamDescription,
+} from '@/lib/translateParams'
 
 // as route.threadsDetail
 export const Route = createFileRoute('/settings/providers/$providerName')({
@@ -370,17 +374,17 @@ function ProviderDetail() {
   const getStatusLabel = useCallback((status: string) => {
     switch (status) {
       case 'ok':
-        return 'OK'
+        return '正常 (200)'
       case 'unauthorized':
-        return 'Invalid / revoked key (401)'
+        return '无效或过期的密钥 (401)'
       case 'forbidden':
-        return 'Forbidden (403)'
+        return '禁止访问 (403)'
       case 'rate_limited':
-        return 'Rate limited / out of credit (429)'
+        return '速率限制 / 额度耗尽 (429)'
       case 'network_error':
-        return 'Network error'
+        return '网络错误'
       default:
-        return 'Failed'
+        return '请求失败'
     }
   }, [])
 
@@ -761,7 +765,7 @@ function ProviderDetail() {
                   return (
                     <CardItem
                       key={settingIndex}
-                      title={setting.title}
+                      title={getTranslatedParamTitle(setting.key, setting.title)}
                       className={cn(setting.key === 'device' && 'hidden')}
                       column={
                         setting.controller_type === 'input' &&
@@ -773,7 +777,10 @@ function ProviderDetail() {
                         <>
                           <RenderMarkdown
                             className="![>p]:text-muted-foreground select-none"
-                            content={setting.description}
+                            content={getTranslatedParamDescription(
+                              setting.key,
+                              setting.description
+                            )}
                             components={{
                               // Make links open in a new tab
                               a: ({ ...props }) => {

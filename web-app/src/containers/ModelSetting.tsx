@@ -22,6 +22,10 @@ import { cn, getModelDisplayName } from '@/lib/utils'
 import { useTranslation } from '@/i18n/react-i18next-compat'
 import { useAppState } from '@/hooks/useAppState'
 import { paramsSettings, samplerKeysForProvider } from '@/lib/predefinedParams'
+import {
+  getTranslatedParamTitle,
+  getTranslatedParamDescription,
+} from '@/lib/translateParams'
 
 type ModelSettingProps = {
   provider: ProviderObject
@@ -350,12 +354,20 @@ export function ModelSettingFields({ model, provider }: ModelSettingProps) {
                   )}
                 >
                   <div className="mb-1 truncate">
-                    <span title={config.title} className="font-medium">{config.title}</span>
+                    <span
+                      title={getTranslatedParamTitle(key, config.title)}
+                      className="font-medium"
+                    >
+                      {getTranslatedParamTitle(key, config.title)}
+                    </span>
                   </div>
                   <DynamicControllerSetting
                     key={config.key}
-                    title={config.title}
-                    description={config.description}
+                    title={getTranslatedParamTitle(key, config.title)}
+                    description={getTranslatedParamDescription(
+                      key,
+                      config.description
+                    )}
                     controllerType={config.controller_type}
                     disabledReason={
                       fitEnabled && key === 'ngl'
@@ -370,7 +382,7 @@ export function ModelSettingFields({ model, provider }: ModelSettingProps) {
                   />
                 </div>
                 <p className="text-muted-foreground leading-normal text-xs">
-                  {config.description}
+                  {getTranslatedParamDescription(key, config.description)}
                 </p>
               </div>
             )

@@ -14,8 +14,6 @@ import { FactoryResetDialog } from '@/containers/dialogs'
 import type { FactoryResetOptions } from '@/services/app/types'
 import { useServiceHub } from '@/hooks/useServiceHub'
 import {
-  IconBrandDiscord,
-  IconBrandGithub,
   IconExternalLink,
   IconFolder,
   IconLogs,
@@ -538,110 +536,6 @@ function General() {
                     >
                       {t('common:verify', { defaultValue: '验证' })}
                     </Button>
-                  </div>
-                }
-              />
-            </Card>
-
-            {/* Resources */}
-            <Card title={t('settings:general.resources')}>
-              <CardItem
-                title={t('settings:general.documentation')}
-                description={t('settings:general.documentationDesc')}
-                actions={
-                  <a
-                    href="https://jan.ai/docs"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>{t('settings:general.viewDocs')}</span>
-                      <IconExternalLink size={14} />
-                    </div>
-                  </a>
-                }
-              />
-              <CardItem
-                title={t('settings:general.releaseNotes')}
-                description={t('settings:general.releaseNotesDesc')}
-                actions={
-                  <a
-                    href="https://github.com/janhq/jan/releases"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>{t('settings:general.viewReleases')}</span>
-                      <IconExternalLink size={14} />
-                    </div>
-                  </a>
-                }
-              />
-            </Card>
-
-            {/* Community */}
-            <Card title={t('settings:general.community')}>
-              <CardItem
-                title={t('settings:general.github')}
-                description={t('settings:general.githubDesc')}
-                actions={
-                  <a
-                    href="https://github.com/janhq/jan"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                      <IconBrandGithub
-                        size={18}
-                        className="text-muted-foreground"
-                      />
-                  </a>
-                }
-              />
-              <CardItem
-                title={t('settings:general.discord')}
-                description={t('settings:general.discordDesc')}
-                actions={
-                  <a
-                    href="https://discord.com/invite/FTk2MvZwJH"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <IconBrandDiscord
-                      size={18}
-                      className="text-muted-foreground"
-                    />
-                  </a>
-                }
-              />
-            </Card>
-
-            {/* Support */}
-            <Card title={t('settings:general.support')}>
-              <CardItem
-                title={t('settings:general.reportAnIssue')}
-                description={t('settings:general.reportAnIssueDesc')}
-                actions={
-                  <a
-                    href="https://github.com/janhq/jan/issues/new"
-                    target="_blank"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>{t('settings:general.reportIssue')}</span>
-                      <IconExternalLink size={14} />
-                    </div>
-                  </a>
-                }
-              />
-            </Card>
-
-            {/* Credits */}
-            <Card title={t('settings:general.credits')}>
-              <CardItem
-                align="start"
-                description={
-                  <div className="text-muted-foreground -mt-2">
-                    <p>{t('settings:general.creditsDesc1')}</p>
-                    <p className="mt-2">{t('settings:general.creditsDesc2')}</p>
                   </div>
                 }
               />
