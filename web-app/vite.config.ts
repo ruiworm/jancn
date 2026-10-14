@@ -7,37 +7,12 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import packageJson from './package.json'
 const host = process.env.TAURI_DEV_HOST
 
-// Plugin to inject GA scripts in HTML
-function injectGoogleAnalytics(gaMeasurementId?: string): Plugin {
+// Plugin to remove GA placeholder (analytics disabled in fork)
+function injectGoogleAnalytics(): Plugin {
   return {
     name: 'inject-google-analytics',
     transformIndexHtml(html) {
-      // Only inject GA scripts if GA_MEASUREMENT_ID is set
-      if (!gaMeasurementId) {
-        // Remove placeholder if no GA ID
-        return html.replace(/\s*<!-- INJECT_GOOGLE_ANALYTICS -->\n?/g, '')
-      }
-
-      const gaScripts = `<!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){ dataLayer.push(arguments); }
-      gtag('consent','default',{
-        ad_storage:'denied',
-        analytics_storage:'denied',
-        ad_user_data:'denied',
-        ad_personalization:'denied',
-        wait_for_update:500
-      });
-      gtag('js', new Date());
-      gtag('config', '${gaMeasurementId}', {
-        debug_mode: (location.hostname === 'localhost'),
-        send_page_view: false
-      });
-    </script>`
-
-      return html.replace('<!-- INJECT_GOOGLE_ANALYTICS -->', gaScripts)
+      return html.replace(/\s*<!-- INJECT_GOOGLE_ANALYTICS -->\n?/g, '')
     },
   }
 }
@@ -59,7 +34,7 @@ export default defineConfig(({ mode }) => {
       nodePolyfills({
         include: ['path'],
       }),
-      injectGoogleAnalytics(env.GA_MEASUREMENT_ID),
+      injectGoogleAnalytics(),
     ],
     resolve: {
       alias: {
@@ -68,7 +43,6 @@ export default defineConfig(({ mode }) => {
         '@janhq/conversational-extension': path.resolve(__dirname, '../extensions/conversational-extension/dist/index.js'),
         '@janhq/download-extension': path.resolve(__dirname, '../extensions/download-extension/dist/index.js'),
         '@janhq/llamacpp-extension': path.resolve(__dirname, '../extensions/llamacpp-extension/dist/index.js'),
-        '@janhq/mlx-extension': path.resolve(__dirname, '../extensions/mlx-extension/dist/index.js'),
         '@janhq/rag-extension': path.resolve(__dirname, '../extensions/rag-extension/dist/index.js'),
         '@janhq/vector-db-extension': path.resolve(__dirname, '../extensions/vector-db-extension/dist/index.js'),
       },
@@ -83,7 +57,6 @@ export default defineConfig(({ mode }) => {
         '@janhq/conversational-extension',
         '@janhq/download-extension',
         '@janhq/llamacpp-extension',
-        '@janhq/mlx-extension',
         '@janhq/rag-extension',
         '@janhq/vector-db-extension',
       ],
@@ -111,9 +84,9 @@ export default defineConfig(({ mode }) => {
 
       VERSION: JSON.stringify(packageJson.version),
 
-      POSTHOG_KEY: JSON.stringify(env.POSTHOG_KEY),
-      POSTHOG_HOST: JSON.stringify(env.POSTHOG_HOST),
-      GA_MEASUREMENT_ID: JSON.stringify(env.GA_MEASUREMENT_ID),
+      POSTHOG_KEY: JSON.stringify(''),
+      POSTHOG_HOST: JSON.stringify(''),
+      GA_MEASUREMENT_ID: JSON.stringify(''),
       MODEL_CATALOG_URL: JSON.stringify(
         env.MODEL_CATALOG_URL ||
           'https://raw.githubusercontent.com/janhq/model-catalog/main/model_catalog_v2.json'
@@ -129,9 +102,7 @@ export default defineConfig(({ mode }) => {
       HF_API_BASE_URL: JSON.stringify(
         (env.HF_API_BASE_URL || 'https://huggingface.co').replace(/\/+$/, '')
       ),
-      AUTO_UPDATER_DISABLED: JSON.stringify(
-        env.AUTO_UPDATER_DISABLED === 'true'
-      ),
+      AUTO_UPDATER_DISABLED: JSON.stringify(true),
       UPDATE_CHECK_INTERVAL_MS: JSON.stringify(
         Number(env.UPDATE_CHECK_INTERVAL_MS) || 60 * 60 * 1000
       ),

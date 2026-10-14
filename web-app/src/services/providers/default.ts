@@ -10,7 +10,7 @@ import { getModelCapabilities } from '@/lib/models'
 export class DefaultProvidersService implements ProvidersService {
   async getProviders(): Promise<ModelProvider[]> {
     try {
-      return predefinedProviders
+      const providers = predefinedProviders
         .map((provider) => {
           let models = provider.models as Model[]
           if (Object.keys(providerModels).includes(provider.provider)) {
@@ -32,9 +32,10 @@ export class DefaultProvidersService implements ProvidersService {
           return {
             ...provider,
             models,
-          }
+          } as unknown as ModelProvider
         })
         .filter(Boolean)
+      return providers as ModelProvider[]
     } catch {
       return []
     }

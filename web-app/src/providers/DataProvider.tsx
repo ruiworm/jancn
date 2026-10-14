@@ -363,26 +363,7 @@ export function DataProvider() {
       return
     }
 
-    // Defer the initial check until the browser is idle (after first paint) so
-    // the network round-trip and any resulting dialog don't compete with the
-    // initial render.
-    const hasRic = typeof window.requestIdleCallback === 'function'
-    const idleHandle = hasRic
-      ? window.requestIdleCallback(() => checkForUpdate(), { timeout: 3000 })
-      : window.setTimeout(() => checkForUpdate(), 0)
-
-    // Set up periodic update checks (singleton - only runs in DataProvider)
-    const intervalId = setInterval(() => {
-      console.log('Periodic update check triggered')
-      checkForUpdate()
-    }, Number(UPDATE_CHECK_INTERVAL_MS))
-
-    // Cleanup interval on unmount
-    return () => {
-      if (hasRic) window.cancelIdleCallback(idleHandle as number)
-      else window.clearTimeout(idleHandle as number)
-      clearInterval(intervalId)
-    }
+    // Periodic update checks disabled in fork
   }, [checkForUpdate, autoUpdateCheck])
 
   useEffect(() => {
