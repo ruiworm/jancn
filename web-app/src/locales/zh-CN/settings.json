@@ -350,7 +350,9 @@
     "tokenFailed": "验证失败",
     "tokenFailedDesc": "验证令牌时发生网络错误，请检查网络连接。",
     "showDownloadManager": "显示下载中心",
-    "showDownloadManagerDesc": "在顶栏与侧边栏显示模型下载进度图标。下载完成后可在此关闭以保持界面极简干净。"
+    "showDownloadManagerDesc": "在顶栏与侧边栏显示模型下载进度图标。下载完成后可在此关闭以保持界面极简干净。",
+    "showHub": "显示模型中心",
+    "showHubDesc": "在侧边栏显示“中心”导航项。下载完成所需模型后可在此关闭以保持侧边栏极简。"
   },
   "extensions": {
     "title": "扩展"

@@ -350,7 +350,9 @@
     "tokenFailed": "Validation failed",
     "tokenFailedDesc": "A network error occurred while validating the token. Please check your internet connection.",
     "showDownloadManager": "Show Download Manager",
-    "showDownloadManagerDesc": "Show download progress center icon in the header and sidebar. You can turn this off to keep the interface minimal once models are downloaded."
+    "showDownloadManagerDesc": "Show download progress center icon in the header and sidebar. You can turn this off to keep the interface minimal once models are downloaded.",
+    "showHub": "Show Model Hub",
+    "showHubDesc": "Show the Hub navigation item in the sidebar. You can turn this off to keep the sidebar minimal once you have downloaded your models."
   },
   "extensions": {
     "title": "Extensions"

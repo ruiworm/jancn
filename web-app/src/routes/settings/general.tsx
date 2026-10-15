@@ -43,6 +43,8 @@ function General() {
     setAutoUpdateCheck,
     showDownloadManager,
     setShowDownloadManager,
+    showHub,
+    setShowHub,
     huggingfaceToken,
     setHuggingfaceToken,
   } = useGeneralSetting()
@@ -240,6 +242,22 @@ function General() {
                   <Switch
                     checked={showDownloadManager}
                     onCheckedChange={(e) => setShowDownloadManager(e)}
+                  />
+                }
+              />
+              <CardItem
+                title={t('settings:general.showHub', {
+                  defaultValue: '显示模型中心',
+                })}
+                description={t('settings:general.showHubDesc', {
+                  defaultValue:
+                    '在侧边栏显示“中心”导航项。下载完成所需模型后可在此关闭以保持侧边栏极简。',
+                })}
+                className="items-center flex-row gap-y-2"
+                actions={
+                  <Switch
+                    checked={showHub}
+                    onCheckedChange={(e) => setShowHub(e)}
                   />
                 }
               />

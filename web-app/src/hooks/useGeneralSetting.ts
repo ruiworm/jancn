@@ -13,6 +13,7 @@ type GeneralSettingState = {
   autoUpdateCheck: boolean
   stripReasoningFromContext: boolean
   showDownloadManager: boolean
+  showHub: boolean
   huggingfaceToken?: string
   setHuggingfaceToken: (token: string) => void
   setSpellCheckChatInput: (value: boolean) => void
@@ -20,6 +21,7 @@ type GeneralSettingState = {
   setAutoUpdateCheck: (value: boolean) => void
   setStripReasoningFromContext: (value: boolean) => void
   setShowDownloadManager: (value: boolean) => void
+  setShowHub: (value: boolean) => void
   setCurrentLanguage: (value: Language) => void
 }
 
@@ -32,6 +34,7 @@ export const useGeneralSetting = create<GeneralSettingState>()(
       autoUpdateCheck: true,
       stripReasoningFromContext: false,
       showDownloadManager: true,
+      showHub: true,
       huggingfaceToken: undefined,
       setSpellCheckChatInput: (value) => set({ spellCheckChatInput: value }),
       setTokenCounterCompact: (value) => set({ tokenCounterCompact: value }),
@@ -39,6 +42,7 @@ export const useGeneralSetting = create<GeneralSettingState>()(
       setStripReasoningFromContext: (value) =>
         set({ stripReasoningFromContext: value }),
       setShowDownloadManager: (value) => set({ showDownloadManager: value }),
+      setShowHub: (value) => set({ showHub: value }),
       setCurrentLanguage: (value) => set({ currentLanguage: value }),
       setHuggingfaceToken: (token) => {
         set({ huggingfaceToken: token })
@@ -85,6 +89,7 @@ export const useGeneralSetting = create<GeneralSettingState>()(
         autoUpdateCheck: state.autoUpdateCheck,
         stripReasoningFromContext: state.stripReasoningFromContext,
         showDownloadManager: state.showDownloadManager,
+        showHub: state.showHub,
       }),
       merge: (persistedState, currentState) => {
         const persisted = (persistedState ?? {}) as Partial<GeneralSettingState>
@@ -99,6 +104,7 @@ export const useGeneralSetting = create<GeneralSettingState>()(
           ...persisted,
           currentLanguage,
           showDownloadManager: persisted.showDownloadManager ?? true,
+          showHub: persisted.showHub ?? true,
         }
       },
     }

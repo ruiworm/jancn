@@ -39,6 +39,7 @@ import { useThreadManagement } from '@/hooks/useThreadManagement'
 import { useSearchDialog } from '@/hooks/useSearchDialog'
 import { useProjectDialog } from '@/hooks/useProjectDialog'
 import { useAgentMode } from '@/hooks/useAgentMode'
+import { useGeneralSetting } from '@/hooks/useGeneralSetting'
 import { TEMPORARY_CHAT_ID } from '@/constants/chat'
 import { PlatformShortcuts, ShortcutAction } from '@/lib/shortcuts'
 
@@ -175,6 +176,7 @@ function NavMainItemWithAnimatedIcon({
 export function NavMain() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const showHub = useGeneralSetting((state) => state.showHub)
   const { addFolder } = useThreadManagement()
   const { open: searchOpen, setOpen: setSearchOpen } = useSearchDialog()
   const { open: projectDialogOpen, setOpen: setProjectDialogOpen } =
@@ -190,7 +192,11 @@ export function NavMain() {
       useAgentMode.getState().setAgentMode(TEMPORARY_CHAT_ID, true)
       navigate({ to: route.home })
     }
-  ).filter((item) => item.title !== 'common:newAgentChat')
+  ).filter((item) => {
+    if (item.title === 'common:newAgentChat') return false
+    if (!showHub && item.title === 'common:hub') return false
+    return true
+  })
 
   const handleCreateProject = async (name: string, assistantId?: string) => {
     const newProject = await addFolder(name, assistantId)
