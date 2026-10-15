@@ -14,7 +14,6 @@ import { FactoryResetDialog } from '@/containers/dialogs'
 import type { FactoryResetOptions } from '@/services/app/types'
 import { useServiceHub } from '@/hooks/useServiceHub'
 import {
-  IconExternalLink,
   IconFolder,
   IconLogs,
   IconCopy,
@@ -365,26 +364,8 @@ function General() {
               />
             </Card>
 
-            {/* Advanced - Desktop only */}
-            <Card title="Advanced">
-              {IS_TAURI && (
-                <CardItem
-                  title={t('settings:general.janCli')}
-                  description={t('settings:general.janCliDesc')}
-                  actions={
-                    <a
-                      href="https://www.jan.ai/docs/agent/quickstart"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <div className="flex items-center gap-1">
-                        <span>{t('settings:general.janCliSetupGuide')}</span>
-                        <IconExternalLink size={14} />
-                      </div>
-                    </a>
-                  }
-                />
-              )}
+            {/* Advanced */}
+            <Card title={t('settings:general.advanced', { defaultValue: '高级设置' })}>
               <CardItem
                 title={t('settings:others.resetFactory', {
                   ns: 'settings',

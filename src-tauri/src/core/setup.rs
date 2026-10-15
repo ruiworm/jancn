@@ -272,11 +272,11 @@ impl TrayLanguage {
     /// `(open, quit)` labels for this language.
     pub fn labels(self) -> (&'static str, &'static str) {
         match self {
-            Self::ZhCn => ("打开 AI", "退出"),
-            Self::ZhTw => ("開啟 AI", "結束"),
+            Self::ZhCn => ("打开 AI Hub", "退出"),
+            Self::ZhTw => ("開啟 AI Hub", "結束"),
             // Unknown languages keep the upstream English labels rather than
             // guessing at a translation.
-            Self::En | Self::Other => ("Open AI", "Quit"),
+            Self::En | Self::Other => ("Open AI Hub", "Quit"),
         }
     }
 }
@@ -748,7 +748,7 @@ mod tray_language_tests {
         for tag in ["fr", "ja", "", "not-a-locale", "en-GB"] {
             let lang = TrayLanguage::from_tag(tag);
             if lang == TrayLanguage::En || lang == TrayLanguage::Other {
-                assert_eq!(lang.labels(), ("Open AI", "Quit"), "tag: {tag:?}");
+                assert_eq!(lang.labels(), ("Open AI Hub", "Quit"), "tag: {tag:?}");
             }
         }
         assert_eq!(TrayLanguage::from_tag("fr"), TrayLanguage::Other);
@@ -757,8 +757,8 @@ mod tray_language_tests {
     #[test]
     fn chinese_labels_are_translated_and_keep_the_brand() {
         let (open, quit) = TrayLanguage::ZhCn.labels();
-        assert_eq!(open, "打开 AI");
+        assert_eq!(open, "打开 AI Hub");
         assert_eq!(quit, "退出");
-        assert!(open.contains("AI"));
+        assert!(open.contains("AI Hub"));
     }
 }

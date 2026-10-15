@@ -332,7 +332,7 @@ export function DownloadManagement() {
                                 <IconPlayerPlay
                                   size={16}
                                   className="text-muted-foreground cursor-pointer"
-                                  title="Resume download"
+                                  title={t('common:resumeDownload', { defaultValue: '继续下载' })}
                                 />
                               </Button>
                             ) : (
@@ -344,7 +344,7 @@ export function DownloadManagement() {
                                 <IconPlayerPause
                                   size={16}
                                   className="text-muted-foreground cursor-pointer"
-                                  title="Pause download"
+                                  title={t('common:pauseDownload', { defaultValue: '暂停下载' })}
                                 />
                               </Button>
                             ))}
@@ -358,7 +358,7 @@ export function DownloadManagement() {
                             <IconX
                               size={16}
                               className="text-muted-foreground cursor-pointer"
-                              title="Cancel download"
+                              title={t('common:cancelDownload', { defaultValue: '取消下载' })}
                             />
                           </Button>
                         </div>
@@ -372,13 +372,13 @@ export function DownloadManagement() {
                           <p className="text-xs">
                             {download.paused
                               ? download.total > 0
-                                ? `Paused · ${Math.round(download.progress * 100)}%`
-                                : 'Paused'
+                                ? `已暂停 · ${Math.round(download.progress * 100)}%`
+                                : '已暂停'
                               : download.total > 0
                                 ? `${Math.round(download.progress * 100)}%`
                                 : download.current > 0
-                                  ? 'Downloading...'
-                                  : 'Initializing download...'}
+                                  ? '下载中...'
+                                  : '正在准备下载...'}
                           </p>
                           <p className="text-xs">
                             {download.total > 0
@@ -409,7 +409,7 @@ export function DownloadManagement() {
               <div className="px-3 py-8 flex flex-col items-center justify-center text-center space-y-2">
                 <DownloadIcon className="text-muted-foreground/50 size-6" />
                 <p className="text-muted-foreground leading-normal">
-                  Your download progress <br /> will appear here
+                  下载进度将在此处显示
                 </p>
               </div>
             )}

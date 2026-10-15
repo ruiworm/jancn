@@ -102,14 +102,17 @@ export function DownloadButtonPlaceholder({
   }, [])
 
   if ((model.quants?.length ?? 0) === 0) {
+    const repoPath = `${model.developer ? `${model.developer}/` : ''}${model.model_name}`
     return (
       <div className="flex items-center gap-2">
         <a
-          href={`https://huggingface.co/${model.developer ? `${model.developer}/` : ''}${model.model_name}`}
+          href={`https://hf-mirror.com/${repoPath}`}
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Button size="sm">View on HuggingFace</Button>
+          <Button size="sm" variant="outline">
+            {t('hub:viewOnMirror', { defaultValue: '在镜像站查看' })}
+          </Button>
         </a>
       </div>
     )

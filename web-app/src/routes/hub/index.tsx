@@ -170,6 +170,7 @@ function HubContent() {
   )
   const [isSearching, setIsSearching] = useState(false)
   const [showOnlyDownloaded, setShowOnlyDownloaded] = useState(false)
+  const [showOnlyDownloadable, setShowOnlyDownloadable] = useState(true)
   const [huggingFaceRepo, setHuggingFaceRepo] = useState<CatalogModel | null>(
     null
   )
@@ -295,6 +296,8 @@ function HubContent() {
           }),
         }))
         .filter((model) => (model.quants?.length ?? 0) > 0)
+    } else if (showOnlyDownloadable) {
+      filtered = filtered.filter((model) => (model.quants?.length ?? 0) > 0)
     }
     // Add HuggingFace repo at the beginning if available
     if (huggingFaceRepo) {
@@ -305,6 +308,7 @@ function HubContent() {
     sortedModels,
     debouncedSearchValue,
     showOnlyDownloaded,
+    showOnlyDownloadable,
     huggingFaceRepo,
     searchOptions,
   ])
@@ -460,6 +464,18 @@ function HubContent() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={showOnlyDownloadable}
+            onCheckedChange={(checked) => {
+              setIsInitialLoad(true)
+              setShowOnlyDownloadable(checked)
+            }}
+          />
+          <span className="text-xs text-foreground font-medium whitespace-nowrap">
+            {t('hub:downloadableOnly', { defaultValue: '可直接下载' })}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           <Switch
             checked={showOnlyDownloaded}

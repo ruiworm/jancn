@@ -255,7 +255,7 @@
   "confirm": "确认",
   "continue": "继续",
   "loading": "加载中...",
-  "settingUpJan": "正在启动 AI…",
+  "settingUpJan": "正在启动 AI Hub…",
   "registeringExtensions": "正在注册扩展…",
   "loadingExtensions": "正在加载扩展…（{{done}}/{{total}}）",
   "error": "错误",
@@ -711,8 +711,8 @@
   },
   "coworkEmpty": {
     "title": "我们要一起做些什么？",
-    "subtitleSandbox": "给 AI 一个任务。它会读写文件、运行命令，并自行完成各个步骤。",
-    "subtitleFolder": "给 AI 一个任务。它会直接在 {{folder}} 中工作，自行读取和编辑文件。",
+    "subtitleSandbox": "给 AI Hub 一个任务。它会读写文件、运行命令，并自行完成各个步骤。",
+    "subtitleFolder": "给 AI Hub 一个任务。它会直接在 {{folder}} 中工作，自行读取和编辑文件。",
     "try": "试一试",
     "sandbox": {
       "first": "编写一个 Python 脚本，按拍摄日期重命名文件",
@@ -729,10 +729,10 @@
     "noTerminal": "无终端",
     "a11y": "运行命令功能已关闭。详情。",
     "title": "运行命令功能已关闭",
-    "body": "只有当您的系统能够限制命令时，AI 才允许智能体运行 Shell 命令。此处没有可用的沙箱，因此智能体可以在其沙箱中读取、写入和编辑文件，但不能运行任何内容。",
-    "fixLinux": "Linux 使用 bubblewrap。请安装后重启 AI。",
-    "fixMac": "macOS 使用内置沙箱 /usr/bin/sandbox-exec。可用后重启 AI 即可。",
-    "fixWindows": "Windows 使用 AppContainer。重启 AI 以重试。",
+    "body": "只有当您的系统能够限制命令时，AI Hub 才允许智能体运行 Shell 命令。此处没有可用的沙箱，因此智能体可以在其沙箱中读取、写入和编辑文件，但不能运行任何内容。",
+    "fixLinux": "Linux 使用 bubblewrap。请安装后重启 AI Hub。",
+    "fixMac": "macOS 使用内置沙箱 /usr/bin/sandbox-exec。可用后重启 AI Hub 即可。",
+    "fixWindows": "Windows 使用 AppContainer。重启 AI Hub 以重试。",
     "recheck": "重新检查"
   },
   "planMode": {

@@ -218,7 +218,7 @@ jobs:
           sed -i "s|jan_workspace|${ws//\\/\\\\}|g" "$tpl"
           sed -i "s/jan_version/$base/g" "$tpl"
           sed -i "s/jan_build/$version_with_build/g" "$tpl"
-          sed -i "s/jan_productname/AI/g" "$tpl"
+          sed -i "s/jan_productname/AI Hub/g" "$tpl"
           sed -i "s/jan_mainbinaryname/Jan-Desktop/g" "$tpl"
           # A distinct bundle id keeps this installable side by side with an
           # official Jan, rather than colliding with it in Add/Remove Programs.

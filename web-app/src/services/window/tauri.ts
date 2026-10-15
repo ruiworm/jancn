@@ -12,7 +12,10 @@ export class TauriWindowService extends DefaultWindowService {
   ): Promise<WebviewWindowInstance> {
     try {
       // Get current theme from localStorage
-      const storedTheme = localStorage.getItem('jan-theme')
+      const storedTheme =
+        typeof localStorage !== 'undefined'
+          ? localStorage.getItem('jan-theme')
+          : null
       let theme: 'light' | 'dark' | undefined = undefined
 
       if (storedTheme) {
@@ -97,7 +100,7 @@ export class TauriWindowService extends DefaultWindowService {
       await this.openWindow({
         url: '/logs',
         label: 'logs-app-window',
-        title: 'App Logs - Jan',
+        title: '应用日志 - AI Hub',
         width: 800,
         height: 600,
         resizable: true,
@@ -114,7 +117,7 @@ export class TauriWindowService extends DefaultWindowService {
       await this.openWindow({
         url: '/system-monitor',
         label: 'system-monitor-window',
-        title: 'System Monitor - Jan',
+        title: '系统监视器 - AI Hub',
         width: 1000,
         height: 700,
         resizable: true,
@@ -131,7 +134,7 @@ export class TauriWindowService extends DefaultWindowService {
       await this.openWindow({
         url: '/local-api-server/logs',
         label: 'logs-window-local-api-server',
-        title: 'Local API Server Logs - Jan',
+        title: '本地 API 服务日志 - AI Hub',
         width: 800,
         height: 600,
         resizable: true,

@@ -1,5 +1,7 @@
 {
   "sortRecommended": "Hardware Recommended",
+  "downloadableOnly": "Downloadable only",
+  "viewOnMirror": "View on HF Mirror",
   "sortNewest": "Newest",
   "sortMostDownloaded": "Most downloaded",
   "newChat": "New chat",

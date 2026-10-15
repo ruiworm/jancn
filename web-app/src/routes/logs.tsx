@@ -84,6 +84,13 @@ function LogsViewer() {
 
   return (
     <div className="flex flex-col h-full bg-background">
+      <div
+        className="h-9 px-3 border-b flex items-center justify-between shrink-0 bg-secondary/40 select-none text-xs"
+        data-tauri-drag-region
+      >
+        <span className="font-medium text-foreground">应用日志 · AI Hub</span>
+        <span className="text-muted-foreground">{logs.length} 条记录</span>
+      </div>
       <div className="flex-1 overflow-auto" ref={logsContainerRef}>
         <div className="font-mono p-2">
           {logs.length === 0 ? (

@@ -1,3 +1,4 @@
+/** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const {
@@ -60,6 +61,24 @@ describe('TauriWindowService', () => {
     resizable: true,
   }
 
+  let store: Record<string, string> = {}
+  const mockLocalStorage = {
+    getItem: vi.fn((key: string) => store[key] ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value
+    }),
+    clear: vi.fn(() => {
+      store = {}
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key]
+    }),
+  }
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: mockLocalStorage,
+    writable: true,
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockClose.mockResolvedValue(undefined)
@@ -68,7 +87,7 @@ describe('TauriWindowService', () => {
     mockSetFocus.mockResolvedValue(undefined)
     mockSetTitle.mockResolvedValue(undefined)
     mockSetTheme.mockResolvedValue(undefined)
-    localStorage.clear()
+    mockLocalStorage.clear()
     svc = new TauriWindowService()
   })
 
@@ -219,7 +238,7 @@ describe('TauriWindowService', () => {
       await svc.openLogsWindow()
       expect(mockConstructor).toHaveBeenCalledWith(
         'logs-app-window',
-        expect.objectContaining({ url: '/logs', title: 'App Logs - Jan' })
+        expect.objectContaining({ url: '/logs', title: '应用日志 - AI Hub' })
       )
     })
 
@@ -241,7 +260,7 @@ describe('TauriWindowService', () => {
         'system-monitor-window',
         expect.objectContaining({
           url: '/system-monitor',
-          title: 'System Monitor - Jan',
+          title: '系统监视器 - AI Hub',
           width: 1000,
           height: 700,
         })
@@ -266,7 +285,7 @@ describe('TauriWindowService', () => {
         'logs-window-local-api-server',
         expect.objectContaining({
           url: '/local-api-server/logs',
-          title: 'Local API Server Logs - Jan',
+          title: '本地 API 服务日志 - AI Hub',
         })
       )
     })
