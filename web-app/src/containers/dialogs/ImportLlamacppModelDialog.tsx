@@ -284,11 +284,11 @@ export const ImportLlamacppModelDialog = ({
 
             if (architecture === 'clip') {
               setDraftValidationError(
-                'This file has CLIP architecture and cannot be used as a draft model.'
+                '此文件属于 CLIP 视觉架构，不能用作草稿模型。'
               )
             } else if (!result.isValid) {
               setDraftValidationError(
-                result.error || 'Draft model validation failed'
+                result.error || '草稿模型文件验证失败'
               )
             } else if (modelTokenizerInfo) {
               const mismatch = findTokenizerMismatch(
@@ -297,7 +297,7 @@ export const ImportLlamacppModelDialog = ({
               )
               if (mismatch) {
                 setDraftValidationError(
-                  `Draft model is not compatible with the main model: ${mismatch}.`
+                  `草稿模型与主模型分词器不兼容: ${mismatch}。`
                 )
               }
             }
@@ -305,7 +305,7 @@ export const ImportLlamacppModelDialog = ({
         }
       } catch (error) {
         console.error(`Failed to validate ${fileType} file:`, error)
-        const errorMessage = `Failed to read ${fileType} metadata: ${error instanceof Error ? error.message : 'Unknown error'}`
+        const errorMessage = `无法读取 ${fileType === 'model' ? '模型' : fileType === 'mmproj' ? '投影' : '草稿'} 文件元数据: ${error instanceof Error ? error.message : '未知错误'}`
 
         if (fileType === 'model') {
           setValidationError(errorMessage)
@@ -382,22 +382,22 @@ export const ImportLlamacppModelDialog = ({
 
   const handleImport = async () => {
     if (!modelFile) {
-      toast.error('Please select a model file')
+      toast.error('请选择模型文件')
       return
     }
 
     if (isMultimodal && !mmProjFile) {
-      toast.error('Please select both model and MMPROJ files for multimodal models')
+      toast.error('多模态模型必须同时选择模型文件与 MMPROJ 投影文件')
       return
     }
 
     if (isDraftModel && !draftFile) {
-      toast.error('Please select a draft model file')
+      toast.error('请选择草稿模型文件')
       return
     }
 
     if (!modelName) {
-      toast.error('Unable to determine model name from file')
+      toast.error('无法从文件名中解析模型名称')
       return
     }
 
@@ -407,8 +407,8 @@ export const ImportLlamacppModelDialog = ({
     )
 
     if (modelExists) {
-      toast.error('Model already exists', {
-        description: `${modelName} already imported`,
+      toast.error('模型已存在', {
+        description: `${modelName} 已经导入过了`,
       })
       return
     }
@@ -428,8 +428,8 @@ export const ImportLlamacppModelDialog = ({
         isDraftModel && draftFile ? draftFile : undefined
       )
 
-      toast.success('Model imported successfully', {
-        description: `${modelName} has been imported`,
+      toast.success('模型导入成功', {
+        description: `${modelName} 已成功添加到模型库`,
       })
 
       // Reset form and close dialog
@@ -438,9 +438,9 @@ export const ImportLlamacppModelDialog = ({
       onSuccess?.(modelName)
     } catch (error) {
       console.error('Import model error:', error)
-      toast.error('Failed to import model', {
+      toast.error('模型导入失败', {
         description:
-          error instanceof Error ? error.message : 'Unknown error occurred',
+          error instanceof Error ? error.message : '发生未知错误',
       })
     } finally {
       setImporting(false)
@@ -484,13 +484,10 @@ export const ImportLlamacppModelDialog = ({
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Import Model
+            导入模型
           </DialogTitle>
           <DialogDescription>
-            Import a GGUF model file to add it to your collection. Enable
-            multimodal support to attach an mmproj for image or audio input,
-            or draft model support for speculative decoding. Embedding models
-            are detected automatically.
+            导入 GGUF 模型文件以将其添加到您的本地模型库。启用多模态支持可附加 mmproj 文件以支持图像或音频输入，启用草稿模型可支持投机采样推理加速。嵌入向量模型会自动检测。
           </DialogDescription>
         </DialogHeader>
 
@@ -501,10 +498,9 @@ export const ImportLlamacppModelDialog = ({
                 <IconSparkles size={20} className="text-muted-foreground" />
               </div>
               <div className="flex-1">
-                <h3 className="font-medium">Multimodal Support</h3>
+                <h3 className="font-medium">多模态支持 (Vision / Audio)</h3>
                 <p className="text-sm text-muted-foreground leading-normal">
-                  Enable if your model uses an mmproj for image or audio input.
-                  Modalities are detected from the projector file.
+                  如果您的模型需要搭配 mmproj 投影文件进行图像或音频理解，请开启此项。模态类型会自动从投影文件中读取。
                 </p>
               </div>
               <Switch
@@ -531,11 +527,9 @@ export const ImportLlamacppModelDialog = ({
                 <IconBolt size={20} className="text-muted-foreground" />
               </div>
               <div className="flex-1">
-                <h3 className="font-medium">Draft Model Support</h3>
+                <h3 className="font-medium">草稿模型支持 (投机采样加速)</h3>
                 <p className="text-sm text-muted-foreground leading-normal">
-                  Attach a smaller draft model (including MTP draft heads) for
-                  speculative decoding. The draft model must share the main
-                  model&apos;s tokenizer and vocabulary.
+                  附加一个尺寸更小的草稿模型（含 MTP 预测头）以进行投机采样推理加速。草稿模型必须与主模型共享分词器与词表。
                 </p>
               </div>
               <Switch
@@ -560,7 +554,7 @@ export const ImportLlamacppModelDialog = ({
             <div className=" rounded-lg p-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-muted-foreground">
-                  Model will be saved as:
+                  模型导入后的名称：
                 </span>
               </div>
               <p className="text-sm font-mono mt-1">
@@ -575,10 +569,10 @@ export const ImportLlamacppModelDialog = ({
             <div className="border  rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <h3 className="font-medium">
-                  Model File (GGUF)
+                  主模型权重文件 (.gguf)
                 </h3>
                 <span className="text-xs bg-secondary px-2 py-1 rounded-sm">
-                  Required
+                  必填
                 </span>
               </div>
 
@@ -610,7 +604,7 @@ export const ImportLlamacppModelDialog = ({
                         onClick={() => handleFileSelect('model')}
                         disabled={importing || isValidating}
                       >
-                        Change
+                        更换
                       </Button>
                     </div>
                   </div>
@@ -625,7 +619,7 @@ export const ImportLlamacppModelDialog = ({
                         />
                         <div>
                           <p className="text-sm font-medium text-destructive">
-                            Model Validation Error
+                            模型文件校验错误
                           </p>
                           <p className="text-sm text-destructive/90 mt-1">
                             {validationError}
@@ -644,7 +638,7 @@ export const ImportLlamacppModelDialog = ({
                           className="text-blue-500 animate-spin"
                         />
                         <p className="text-sm text-blue-700">
-                          Validating model file...
+                          正在校验模型文件...
                         </p>
                       </div>
                     </div>
@@ -655,11 +649,10 @@ export const ImportLlamacppModelDialog = ({
                       <IconCodeCircle2 size={16} className="mt-0.5 shrink-0" />
                       <div>
                         <p className="text-sm font-medium">
-                          Embedding model detected
+                          已检测到嵌入向量模型
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          This model will be imported for embeddings only.
-                          Multimodal options are disabled.
+                          此模型将作为纯嵌入向量模型导入，多模态与草稿模型选项已自动禁用。
                         </p>
                       </div>
                     </div>
@@ -673,7 +666,7 @@ export const ImportLlamacppModelDialog = ({
                   disabled={importing}
                   className="w-full h-12 border border-dashed text-muted-foreground"
                 >
-                  Select GGUF File
+                  点击选择 .gguf 主模型文件
                 </Button>
               )}
             </div>
@@ -681,9 +674,9 @@ export const ImportLlamacppModelDialog = ({
             {isMultimodal && (
               <div className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-medium">MMPROJ File</h3>
+                  <h3 className="font-medium">MMPROJ 视觉/音频投影文件</h3>
                   <span className="text-xs bg-secondary px-2 py-1 rounded-sm">
-                    Required for Multimodal
+                    多模态必需
                   </span>
                 </div>
 
@@ -715,7 +708,7 @@ export const ImportLlamacppModelDialog = ({
                           onClick={() => handleFileSelect('mmproj')}
                           disabled={importing || isValidatingMmproj}
                         >
-                          Change
+                          更换
                         </Button>
                       </div>
                       {!isValidatingMmproj &&
@@ -723,18 +716,18 @@ export const ImportLlamacppModelDialog = ({
                         detectedModalities && (
                           <div className="flex items-center gap-2 mt-3 pt-3 border-t">
                             <span className="text-xs text-muted-foreground">
-                              Detected:
+                              已检测到模态：
                             </span>
                             {detectedModalities.vision && (
                               <span className="inline-flex items-center gap-1 text-xs bg-secondary px-2 py-0.5 rounded-sm">
                                 <IconPhoto size={12} />
-                                Vision
+                                视觉 (Vision)
                               </span>
                             )}
                             {detectedModalities.audio && (
                               <span className="inline-flex items-center gap-1 text-xs bg-secondary px-2 py-0.5 rounded-sm">
                                 <IconMicrophone size={12} />
-                                Audio
+                                音频 (Audio)
                               </span>
                             )}
                           </div>
@@ -751,7 +744,7 @@ export const ImportLlamacppModelDialog = ({
                           />
                           <div>
                             <p className="text-sm font-medium text-destructive">
-                              MMProj Validation Error
+                              投影文件校验错误
                             </p>
                             <p className="text-sm text-destructive/90 mt-1">
                               {mmprojValidationError}
@@ -770,7 +763,7 @@ export const ImportLlamacppModelDialog = ({
                             className="text-blue-500 animate-spin"
                           />
                           <p className="text-sm text-blue-700">
-                            Validating MMProj file...
+                            正在校验 MMPROJ 文件...
                           </p>
                         </div>
                       </div>
@@ -784,7 +777,7 @@ export const ImportLlamacppModelDialog = ({
                     disabled={importing}
                     className="w-full h-12 border border-dashed text-muted-foreground"
                   >
-                    Select MMPROJ File
+                    点击选择 .mmproj 投影文件
                   </Button>
                 )}
               </div>
@@ -793,9 +786,9 @@ export const ImportLlamacppModelDialog = ({
             {isDraftModel && (
               <div className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-medium">Draft Model File (GGUF)</h3>
+                  <h3 className="font-medium">草稿模型文件 (GGUF)</h3>
                   <span className="text-xs bg-secondary px-2 py-1 rounded-sm">
-                    Required for Draft Model
+                    草稿模型必需
                   </span>
                 </div>
 
@@ -824,7 +817,7 @@ export const ImportLlamacppModelDialog = ({
                           onClick={() => handleFileSelect('draft')}
                           disabled={importing || isValidatingDraft}
                         >
-                          Change
+                          更换
                         </Button>
                       </div>
                     </div>
@@ -838,7 +831,7 @@ export const ImportLlamacppModelDialog = ({
                           />
                           <div>
                             <p className="text-sm font-medium text-destructive">
-                              Draft Model Validation Error
+                              草稿模型校验错误
                             </p>
                             <p className="text-sm text-destructive/90 mt-1">
                               {draftValidationError}
@@ -856,7 +849,7 @@ export const ImportLlamacppModelDialog = ({
                             className="text-blue-500 animate-spin"
                           />
                           <p className="text-sm text-blue-700">
-                            Validating draft model file...
+                            正在校验草稿模型文件...
                           </p>
                         </div>
                       </div>
@@ -870,7 +863,7 @@ export const ImportLlamacppModelDialog = ({
                     disabled={importing}
                     className="w-full h-12 border border-dashed text-muted-foreground"
                   >
-                    Select Draft GGUF File
+                    点击选择草稿 .gguf 文件
                   </Button>
                 )}
               </div>
@@ -885,7 +878,7 @@ export const ImportLlamacppModelDialog = ({
             onClick={() => handleOpenChange(false)}
             disabled={importing}
           >
-            Cancel
+            取消
           </Button>
           <Button
             onClick={handleImport}
@@ -905,7 +898,7 @@ export const ImportLlamacppModelDialog = ({
             }
           >
             {importing && <IconLoader2 className="mr-2 size-4 animate-spin" />}
-            {importing ? 'Importing...' : 'Import Model'}
+            {importing ? '正在导入...' : '确认导入'}
           </Button>
         </div>
       </DialogContent>

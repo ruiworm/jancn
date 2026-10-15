@@ -12,12 +12,14 @@ import { IconPlayerPause, IconPlayerPlay, IconX } from '@tabler/icons-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslation } from '@/i18n/react-i18next-compat'
+import { useGeneralSetting } from '@/hooks/useGeneralSetting'
 import { DownloadIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatBytes } from '@/lib/utils'
 
 export function DownloadManagement() {
   const { t } = useTranslation()
+  const showDownloadManager = useGeneralSetting((s) => s.showDownloadManager)
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
   const serviceHub = useServiceHub()
   const {
@@ -229,6 +231,10 @@ export function DownloadManagement() {
     onAppUpdateDownloadSuccess,
     onAppUpdateDownloadError,
   ])
+
+  if (!showDownloadManager && downloadCount === 0) {
+    return null
+  }
 
   return (
     <>

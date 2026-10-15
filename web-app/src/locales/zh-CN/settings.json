@@ -348,7 +348,9 @@
     "tokenTimeout": "验证超时",
     "tokenTimeoutDesc": "验证请求超时，请检查网络连接并重试。",
     "tokenFailed": "验证失败",
-    "tokenFailedDesc": "验证令牌时发生网络错误，请检查网络连接。"
+    "tokenFailedDesc": "验证令牌时发生网络错误，请检查网络连接。",
+    "showDownloadManager": "显示下载中心",
+    "showDownloadManagerDesc": "在顶栏与侧边栏显示模型下载进度图标。下载完成后可在此关闭以保持界面极简干净。"
   },
   "extensions": {
     "title": "扩展"

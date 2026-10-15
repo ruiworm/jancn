@@ -348,7 +348,9 @@
     "tokenTimeout": "Validation timed out",
     "tokenTimeoutDesc": "The validation request timed out. Please check your network connection and try again.",
     "tokenFailed": "Validation failed",
-    "tokenFailedDesc": "A network error occurred while validating the token. Please check your internet connection."
+    "tokenFailedDesc": "A network error occurred while validating the token. Please check your internet connection.",
+    "showDownloadManager": "Show Download Manager",
+    "showDownloadManagerDesc": "Show download progress center icon in the header and sidebar. You can turn this off to keep the interface minimal once models are downloaded."
   },
   "extensions": {
     "title": "Extensions"

@@ -29,30 +29,19 @@ const setLastUsedAssistantId = (assistantId: string) => {
 
 export const defaultAssistant: Assistant = {
   id: 'jan',
-  name: 'Jan',
+  name: 'AI 助手',
   created_at: 1747029866.542,
   parameters: {},
   avatar: '👋',
   description:
-    "Jan is a helpful desktop assistant that can reason through complex tasks and use tools to complete them on the user's behalf.",
-  instructions: `You must output your response in the exact language used in the latest user message. Do not provide translations or switch languages unless explicitly instructed to do so. If the input is mostly English, respond in English.
+    '通用的桌面智能助手，具备强大的逻辑推理能力，能协助您完成各类复杂任务与问答。',
+  instructions: `你是一个智能桌面助手，请始终使用用户提问所用的语言进行准确、清晰、有逻辑且富有帮助的回答。
+如果用户提问使用的是中文，请使用自然流畅的中文回答。
 
-When handling user queries:
-
-1. Think step by step about the query:
-   - Break complex questions into smaller, searchable parts
-   - Identify key search terms and parameters
-   - Consider what information is needed to provide a complete answer
-
-2. Mandatory logical analysis:
-   - Before engaging any tools, articulate your complete thought process in natural language. You must act as a "professional tool caller," demonstrating rigorous logic.
-   - Analyze the information gap: explicitly state what data is missing.
-   - Derive the strategy: explain why a specific tool is the logical next step.
-   - Justify parameters: explain why you chose those specific search keywords or that specific URL.
-
-You have tools to search for and access real-time, up-to-date data. Use them. Search before stating that you can't or don't know.
-
-Current date: {{current_date}}`,
+在回答复杂问题时：
+1. 先思考并理清核心要点，分步骤清晰阐述；
+2. 保持回答客观严谨，提供切实可行的解决方案；
+3. 充分发挥推理能力，给出高质量、结构化的内容。`,
 }
 
 const getLastUsedAssistantId = (assistants: Assistant[]): string => {
@@ -191,7 +180,20 @@ export const useAssistant = create<AssistantState>((set, get) => ({
   },
   setAssistants: (assistants) => {
     if (assistants) {
-      assistants.forEach((a) => (a.id = a.id?.toString())) // new String("id") !== "id"
+      assistants.forEach((a) => {
+        a.id = a.id?.toString()
+        if (a.id === 'jan' || a.name === 'Jan') {
+          a.name = 'AI 助手'
+          if (
+            !a.description ||
+            a.description.startsWith('Jan is a helpful') ||
+            a.description.includes('Jan')
+          ) {
+            a.description =
+              '通用的桌面智能助手，具备强大的逻辑推理能力，能协助您完成各类复杂任务与问答。'
+          }
+        }
+      }) // new String("id") !== "id"
       const lastUsedId = getLastUsedAssistantId(assistants)
       const lastUsedAssist = assistants.find((a) => a.id === lastUsedId)
       const defaultAssistantId = getDefaultAssistantId() || ''

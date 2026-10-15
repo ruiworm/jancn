@@ -12,12 +12,14 @@ type GeneralSettingState = {
   tokenCounterCompact: boolean
   autoUpdateCheck: boolean
   stripReasoningFromContext: boolean
+  showDownloadManager: boolean
   huggingfaceToken?: string
   setHuggingfaceToken: (token: string) => void
   setSpellCheckChatInput: (value: boolean) => void
   setTokenCounterCompact: (value: boolean) => void
   setAutoUpdateCheck: (value: boolean) => void
   setStripReasoningFromContext: (value: boolean) => void
+  setShowDownloadManager: (value: boolean) => void
   setCurrentLanguage: (value: Language) => void
 }
 
@@ -29,12 +31,14 @@ export const useGeneralSetting = create<GeneralSettingState>()(
       tokenCounterCompact: true,
       autoUpdateCheck: true,
       stripReasoningFromContext: false,
+      showDownloadManager: true,
       huggingfaceToken: undefined,
       setSpellCheckChatInput: (value) => set({ spellCheckChatInput: value }),
       setTokenCounterCompact: (value) => set({ tokenCounterCompact: value }),
       setAutoUpdateCheck: (value) => set({ autoUpdateCheck: value }),
       setStripReasoningFromContext: (value) =>
         set({ stripReasoningFromContext: value }),
+      setShowDownloadManager: (value) => set({ showDownloadManager: value }),
       setCurrentLanguage: (value) => set({ currentLanguage: value }),
       setHuggingfaceToken: (token) => {
         set({ huggingfaceToken: token })
@@ -80,6 +84,7 @@ export const useGeneralSetting = create<GeneralSettingState>()(
         tokenCounterCompact: state.tokenCounterCompact,
         autoUpdateCheck: state.autoUpdateCheck,
         stripReasoningFromContext: state.stripReasoningFromContext,
+        showDownloadManager: state.showDownloadManager,
       }),
       merge: (persistedState, currentState) => {
         const persisted = (persistedState ?? {}) as Partial<GeneralSettingState>
@@ -93,6 +98,7 @@ export const useGeneralSetting = create<GeneralSettingState>()(
           ...currentState,
           ...persisted,
           currentLanguage,
+          showDownloadManager: persisted.showDownloadManager ?? true,
         }
       },
     }

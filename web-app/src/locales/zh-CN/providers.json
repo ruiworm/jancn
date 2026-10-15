@@ -32,7 +32,7 @@
   "refresh": "刷新",
   "import": "导入",
   "imported": "已导入",
-  "importedTooltip": "从本地文件导入。从 Jan 中移除它不会删除磁盘上的文件。",
+  "importedTooltip": "从本地文件导入。从模型库中移除它不会删除磁盘上的文件。",
   "importModelSuccess": "模型 {{provider}} 已成功导入。",
   "importModelError": "导入模型失败：",
   "stop": "停止",
@@ -56,8 +56,8 @@
   "deleteModel": {
     "title": "删除模型：{{modelId}}",
     "description": "您确定要删除此模型吗？此操作无法撤销。",
-    "importedDescription": "要从 Jan 中移除此导入的模型吗？磁盘上的本地文件不会被删除。",
-    "removeFromJan": "从 Jan 中移除",
+    "importedDescription": "要从本地模型库中移除此导入的模型吗？磁盘上的本地文件不会被删除。",
+    "removeFromJan": "从模型库中移除",
     "success": "模型 {{modelId}} 已被永久删除。",
     "cancel": "取消",
     "delete": "删除"
@@ -69,7 +69,7 @@
     "sizeLabel": "将释放的磁盘空间：",
     "calculating": "正在计算…",
     "warning": "此操作无法撤销。",
-    "importedExcluded": "将保留 {{count}} 个导入的模型（它们的文件并非由 Jan 下载）。",
+    "importedExcluded": "将保留 {{count}} 个导入的模型（它们的文件并非由应用下载）。",
     "confirm": "删除 {{count}} 个模型",
     "deleting": "正在删除…",
     "success": "已删除 {{count}} 个模型。",

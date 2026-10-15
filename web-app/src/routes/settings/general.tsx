@@ -41,6 +41,8 @@ function General() {
     setSpellCheckChatInput,
     autoUpdateCheck,
     setAutoUpdateCheck,
+    showDownloadManager,
+    setShowDownloadManager,
     huggingfaceToken,
     setHuggingfaceToken,
   } = useGeneralSetting()
@@ -224,6 +226,22 @@ function General() {
               <CardItem
                 title={t('common:language')}
                 actions={<LanguageSwitcher />}
+              />
+              <CardItem
+                title={t('settings:general.showDownloadManager', {
+                  defaultValue: '显示下载中心',
+                })}
+                description={t('settings:general.showDownloadManagerDesc', {
+                  defaultValue:
+                    '在顶栏与侧边栏显示模型下载进度图标。下载完成后可在此关闭以保持界面极简干净。',
+                })}
+                className="items-center flex-row gap-y-2"
+                actions={
+                  <Switch
+                    checked={showDownloadManager}
+                    onCheckedChange={(e) => setShowDownloadManager(e)}
+                  />
+                }
               />
             </Card>
 
