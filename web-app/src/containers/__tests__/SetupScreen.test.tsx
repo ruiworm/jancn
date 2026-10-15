@@ -2,6 +2,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import '@testing-library/jest-dom'
 
+let testStore: Record<string, string> = {}
+const mockLocalStorage = {
+  getItem: vi.fn((key: string) => testStore[key] ?? null),
+  setItem: vi.fn((key: string, value: string) => {
+    testStore[key] = value
+  }),
+  clear: vi.fn(() => {
+    testStore = {}
+  }),
+  removeItem: vi.fn((key: string) => {
+    delete testStore[key]
+  }),
+}
+Object.defineProperty(globalThis, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true,
+})
+
 // ---- Module mocks ----------------------------------------------------------
 
 const hoisted = vi.hoisted(() => ({
