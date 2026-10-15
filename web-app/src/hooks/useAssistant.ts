@@ -29,7 +29,7 @@ const setLastUsedAssistantId = (assistantId: string) => {
 
 export const defaultAssistant: Assistant = {
   id: 'jan',
-  name: 'AI 助手',
+  name: 'AI',
   created_at: 1747029866.542,
   parameters: {},
   avatar: '👋',
@@ -43,6 +43,47 @@ export const defaultAssistant: Assistant = {
 2. 保持回答客观严谨，提供切实可行的解决方案；
 3. 充分发挥推理能力，给出高质量、结构化的内容。`,
 }
+
+export const translationAssistant: Assistant = {
+  id: 'translator',
+  name: '中英翻译助手',
+  created_at: 1747029866.543,
+  parameters: {
+    temperature: 0.3,
+  },
+  avatar: '🌐',
+  description: '专业的中英双语互译助手，忠实直译并提供地道流畅的润色优化建议。',
+  instructions: `你是一名精通中文和英文的双语翻译专家。你的核心准则是“忠实直译，给出地道的润色建议”。
+
+当接收到用户的内容时：
+1. 【直译】：忠实于原文的词义、语气与结构，做到准确严谨、无遗漏；
+2. 【地道润色】：根据语言习惯与上下文语境，提供更符合母语者表达的自然表达建议；
+3. 【难点解析】（如需要）：指出难点词汇、成语或文化背景差异。`,
+}
+
+export const writingAssistant: Assistant = {
+  id: 'creative_writer',
+  name: '长文写作助手',
+  created_at: 1747029866.544,
+  parameters: {
+    temperature: 0.95,
+    top_p: 0.95,
+  },
+  avatar: '✍️',
+  description: '高创造力的深度长文写作助手，适合文章、方案、故事、综述与深度报告创作。',
+  instructions: `你是一名专业资深的内容创作者与长文写作者。你具备极高的创造力、丰富的词汇量和深邃的逻辑架构能力。
+
+写作规范：
+1. 深入展开构思，避免空泛模板化的套话；
+2. 段落结构严谨，层次分明，逻辑递进，善用生动的修辞与有力的论据；
+3. 根据主题自动匹配最合适的写作风格（文学叙事、专业白皮书、行业深度分析或公文汇报）。`,
+}
+
+export const builtinAssistants: Assistant[] = [
+  defaultAssistant,
+  translationAssistant,
+  writingAssistant,
+]
 
 const getLastUsedAssistantId = (assistants: Assistant[]): string => {
   let lastUsedId
@@ -92,7 +133,7 @@ const setDefaultAssistantId = (assistantId: string) => {
 // Platform-aware initial state
 const getInitialAssistantState = () => {
   return {
-    assistants: [defaultAssistant],
+    assistants: [...builtinAssistants],
     currentAssistant: defaultAssistant,
     defaultAssistantId: '',
     loading: true,
@@ -182,8 +223,8 @@ export const useAssistant = create<AssistantState>((set, get) => ({
     if (assistants) {
       assistants.forEach((a) => {
         a.id = a.id?.toString()
-        if (a.id === 'jan' || a.name === 'Jan') {
-          a.name = 'AI 助手'
+        if (a.id === 'jan' || a.name === 'Jan' || a.name === 'AI 助手') {
+          a.name = 'AI'
           if (
             !a.description ||
             a.description.startsWith('Jan is a helpful') ||
@@ -194,15 +235,32 @@ export const useAssistant = create<AssistantState>((set, get) => ({
           }
         }
       }) // new String("id") !== "id"
+
+      // Automatically register the new built-in assistants if missing from disk
+      if (!assistants.some((a) => a.id === translationAssistant.id)) {
+        assistants.push(translationAssistant)
+        getServiceHub()
+          .assistants()
+          .createAssistant(translationAssistant as unknown as CoreAssistant)
+          .catch(() => {})
+      }
+      if (!assistants.some((a) => a.id === writingAssistant.id)) {
+        assistants.push(writingAssistant)
+        getServiceHub()
+          .assistants()
+          .createAssistant(writingAssistant as unknown as CoreAssistant)
+          .catch(() => {})
+      }
+
       const lastUsedId = getLastUsedAssistantId(assistants)
       const lastUsedAssist = assistants.find((a) => a.id === lastUsedId)
       const defaultAssistantId = getDefaultAssistantId() || ''
-      const defaultAssistant = assistants.find((a) => a.id === defaultAssistantId)
+      const defaultAssistantItem = assistants.find((a) => a.id === defaultAssistantId)
       set({
         assistants,
-        currentAssistant: defaultAssistant || lastUsedAssist,
+        currentAssistant: defaultAssistantItem || lastUsedAssist || defaultAssistant,
         defaultAssistantId,
-        loading: false
+        loading: false,
       })
     } else {
       set({ loading: false })
